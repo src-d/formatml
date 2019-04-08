@@ -1,0 +1,12 @@
+local add(x, y) = x + y;
+
+{
+  sum(x)::std.foldl(add, x, 0),
+  pluck(array, field)::[x[field] for x in array],
+  resource(name)::{ _resource: name },
+  class(type, config = {}, resources = {})::{
+    _type: type,
+    _config: config,
+    _resources_registration: resources,
+  },
+}
