@@ -246,23 +246,6 @@ def _construct_param_arg(
         return param_value
 
 
-def register_resources(context: Any, parameters: Dict[str, Any]) -> Any:
-    """Register resources given their configuration."""
-    from formatml.resources.resource import Resource
-    from formatml.utils.registrable import by_name
-
-    for name, subparameters in parameters.items():
-        _logger.debug(f"Registering resource {name}.")
-        subclass = by_name(Resource, subparameters["_type"])
-        if hasattr(subclass, "from_params"):
-            instance = subclass.from_params(subparameters["_config"], context)
-        else:
-            instance = subclass(**subparameters["_config"])
-        context.register_resource(name, instance)
-
-    return context
-
-
 def from_params(clz: Type[_T]) -> Type[_T]:
     """Decorate a class with a from_params method."""
 
@@ -280,12 +263,17 @@ def from_params(clz: Type[_T]) -> Type[_T]:
         """
         # Import here to avoid circular imports.
         from formatml.utils.registrable import by_name, has_registrations
+        from formatml.resources.resource import Resource
 
-        if (
-            "_resources_registration" in parameters
-            and parameters["_resources_registration"]
-        ):
-            register_resources(context, parameters["_resources_registration"])
+        if "_resources_registration" in parameters:
+            for name, subparameters in parameters["_resources_registration"].items():
+                _logger.debug(f"Registering resource {name}.")
+                subclass = by_name(Resource, subparameters["_type"])
+                if hasattr(subclass, "from_params"):
+                    instance = subclass.from_params(subparameters["_config"], context)
+                else:
+                    instance = subclass(**subparameters["_config"])
+                context.register_resource(name, instance)
 
         if "_resource" in parameters:
             return context.get_resource(parameters["_resource"])
