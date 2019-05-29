@@ -52,6 +52,7 @@ utils.class(
               label: utils.class('label', { vocabulary: utils.resource('voc_label') }),
             },
           },
+          parser: utils.class('javascript'),
         },
       ),
       model: utils.class(
@@ -114,7 +115,7 @@ utils.class(
   },
   {
     run_dir: utils.class('date_template_path',
-                         { date_template: 'runs/%m-%d-%H:%M:%S%z' }),
+                         { date_template: 'runs/meta-learning/%m-%d-%H:%M:%S%z' }),
     voc_graph: utils.class('vocabulary'),
     voc_roles: utils.class('vocabulary', { unknown: '<UNK>' }),
     voc_type: utils.class('vocabulary', { unknown: '<UNK>' }),

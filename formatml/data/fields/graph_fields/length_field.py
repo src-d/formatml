@@ -4,7 +4,7 @@ from torch import cat as torch_cat, long as torch_long, Tensor, tensor
 
 from formatml.data.fields.field import Field
 from formatml.data.fields.graph_fields.graph_field import GraphField
-from formatml.parser import Node, NodesSample
+from formatml.parsing.parser import Node, Nodes
 from formatml.resources.vocabulary import Vocabulary
 from formatml.utils.registrable import register
 
@@ -23,11 +23,11 @@ class LengthField(GraphField[Tensor]):
         self.vocabulary = vocabulary
         vocabulary.add_items(range(max_length + 2))
 
-    def pre_tensorize(self, sample: NodesSample) -> None:
+    def pre_tensorize(self, sample: Nodes) -> None:
         for node in sample.nodes:
             self.vocabulary.add_item(node.internal_type)
 
-    def tensorize(self, sample: NodesSample) -> Tensor:
+    def tensorize(self, sample: Nodes) -> Tensor:
         return tensor([self._length(node) for node in sample.nodes], dtype=torch_long)
 
     def collate(self, tensors: Iterable[Tensor]) -> Tensor:

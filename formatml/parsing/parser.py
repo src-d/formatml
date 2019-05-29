@@ -1,12 +1,14 @@
-from difflib import unified_diff
+from difflib import context_diff as unified_diff
 from itertools import islice
 from logging import getLogger
 from pathlib import Path
 from re import compile as re_compile, escape as re_escape
-from typing import Any, Dict, List, NamedTuple, Optional, Set
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
 
 from bblfsh import BblfshClient, Node as BblfshNode, role_name
 from numpy import array, int32, uint32, unicode_
+
+from formatml.utils.from_params import from_params
 
 
 class ParsingException(Exception):
@@ -46,7 +48,7 @@ class Node:
         self.end = end
 
 
-class NodesSample(NamedTuple):
+class Nodes(NamedTuple):
     """Utilities for lists of nodes."""
 
     nodes: List[Node]
@@ -103,7 +105,7 @@ class NodesSample(NamedTuple):
         }
 
     @staticmethod
-    def from_tree(tree: Dict[str, Any]) -> "NodesSample":
+    def from_tree(tree: Dict[str, Any]) -> "Nodes":
         """
         Convert an asdf tree into a list of nodes.
 
@@ -139,7 +141,7 @@ class NodesSample(NamedTuple):
             if node.internal_type == "WhiteSpace":
                 assert node.token.isspace()
         node_index = {id(node): i for i, node in enumerate(all_nodes)}
-        return NodesSample(
+        return Nodes(
             all_nodes, node_index, [i for i in map(int, tree["token_node_indexes"])]
         )
 
@@ -147,14 +149,15 @@ class NodesSample(NamedTuple):
 class BblfshNodeConverter:
     """Convert `BblfshNode`-s to `Node`-s (and handle bytes-unicode conversion)."""
 
-    def __init__(self, file_content: str):
+    def __init__(self, file_content: str, dont_convert_to_utf8: bool = False):
         """Contruct a converter."""
         self.file_content = file_content
+        self.dont_convert_to_utf8 = dont_convert_to_utf8
         self.binary_to_str: Dict[int, int] = {}
         current_offset = 0
         for i, char in enumerate(self.file_content):
             self.binary_to_str[current_offset] = i
-            current_offset += len(char.encode("utf-8", errors="strict"))
+            current_offset += len(char.encode("utf-8", errors="replace"))
         self.binary_to_str[current_offset] = len(self.file_content)
 
     def bblfsh_node_to_node(
@@ -165,8 +168,11 @@ class BblfshNodeConverter:
             bblfsh_node.start_position.offset or bblfsh_node.end_position.offset
         )
         if position:
-            start = self.binary_to_str[bblfsh_node.start_position.offset]
-            end = self.binary_to_str[bblfsh_node.end_position.offset]
+            start = bblfsh_node.start_position.offset
+            end = bblfsh_node.end_position.offset
+            if not self.dont_convert_to_utf8:
+                start = self.binary_to_str[start]
+                end = self.binary_to_str[end]
             token = self.file_content[start:end]
         else:
             start = None
@@ -185,144 +191,38 @@ class BblfshNodeConverter:
         )
 
 
+@from_params
 class Parser:
     """Parse files into list of nodes."""
 
-    _logger = getLogger(__name__)
+    def __init_subclass__(
+        cls,
+        bblfsh_language: str,
+        reserved: List[str],
+        uast_fixers: Optional[Dict[str, Callable[[BblfshNode], None]]] = None,
+    ) -> None:
+        cls._bblfsh_language = bblfsh_language
+        cls._parser_reserved = re_compile(
+            "|".join(re_escape(i) for i in sorted(reserved, reverse=True))
+        )
+        cls._parser_space = re_compile(r"\s+")
+        cls._uast_fixers = uast_fixers if uast_fixers else {}
+        cls._logger = getLogger(cls.__name__)
 
     def __init__(self) -> None:
         """Construct a parser."""
-        self.reserved = [
-            "abstract",
-            "any",
-            "as",
-            "async",
-            "await",
-            "boolean",
-            "break",
-            "byte",
-            "case",
-            "catch",
-            "char",
-            "class",
-            "const",
-            "continue",
-            "debugger",
-            "declare",
-            "default",
-            "delete",
-            "do",
-            "double",
-            "else",
-            "enum",
-            "export",
-            "exports",
-            "extends",
-            "false",
-            "final",
-            "finally",
-            "float",
-            "for",
-            "from",
-            "function",
-            "get",
-            "goto",
-            "of",
-            "opaque",
-            "if",
-            "implements",
-            "import",
-            "in",
-            "instanceof",
-            "int",
-            "interface",
-            "let",
-            "long",
-            "mixed",
-            "module",
-            "native",
-            "new",
-            "number",
-            "null",
-            "package",
-            "private",
-            "protected",
-            "public",
-            "return",
-            "set",
-            "short",
-            "static",
-            "string",
-            "super",
-            "switch",
-            "synchronized",
-            "this",
-            "throw",
-            "throws",
-            "transient",
-            "true",
-            "try",
-            "type",
-            "typeof",
-            "yield",
-            "var",
-            "void",
-            "volatile",
-            "while",
-            "with",
-            "+",
-            "-",
-            "*",
-            "/",
-            "%",
-            "++",
-            "--",
-            "=",
-            "+=",
-            "-=",
-            "/=",
-            "%=",
-            "==",
-            "===",
-            "!=",
-            "!==",
-            ">",
-            "<",
-            ">=",
-            "<=",
-            "?",
-            ":",
-            "&&",
-            "||",
-            "!",
-            "&",
-            "|",
-            "~",
-            "^",
-            ">>",
-            "<<",
-            "(",
-            ")",
-            "{",
-            "}",
-            ".",
-            "...",
-            "[",
-            "]",
-            ">>>",
-            ",",
-            ";",
-            "'",
-            '"',
-            "`",
-            "${",
-            "\\",
-        ]
-        # The longest keywords should come first for the regex below to be usable with
-        # finditer
-        self.reserved.sort(reverse=True)
-        self.parser_reserved = re_compile("|".join(re_escape(i) for i in self.reserved))
-        self.parser_space = re_compile(r"\s+")
+        for attr in [
+            "_bblfsh_language",
+            "_parser_reserved",
+            "_parser_space",
+            "_uast_fixers",
+        ]:
+            if not hasattr(self, attr):
+
+                raise NotImplementedError(
+                    f"The {self.__class__.__name__} is a base class and should not be "
+                    "used directly."
+                )
 
     def parse(
         self,
@@ -341,7 +241,7 @@ class Parser:
         :return: List of parsed `Node`s.
         """
         response = bblfsh_client.parse(
-            str(repository_path / file_path), language="javascript"
+            str(repository_path / file_path), language=self._bblfsh_language
         )
         if response.status != 0:
             self._logger.warn(
@@ -362,6 +262,10 @@ class Parser:
         non_formatting_tokens = []
         while to_visit:
             current_bblfsh_node, current_node = to_visit.pop()
+            if current_bblfsh_node.internal_type in self._uast_fixers:
+                self._uast_fixers[current_bblfsh_node.internal_type](
+                    current_bblfsh_node
+                )
             to_visit.extend(
                 (
                     bblfsh_child,
@@ -396,7 +300,7 @@ class Parser:
                 sumlen = 0
                 diff = file_content[pos : node.start]
                 additional_nodes = []
-                for match in self.parser_reserved.finditer(diff):
+                for match in self._parser_reserved.finditer(diff):
                     token = match.group()
                     additional_nodes.append(
                         Node(
@@ -409,7 +313,7 @@ class Parser:
                         )
                     )
                     sumlen += len(token)
-                for match in self.parser_space.finditer(diff):
+                for match in self._parser_space.finditer(diff):
                     token = match.group()
                     assert token.isspace()
                     additional_nodes.append(
@@ -464,7 +368,7 @@ class Parser:
     ) -> List[Node]:
         augmented_tokens = []
 
-        if tokens and tokens[0].internal_type != formatting_internal_type:
+        if not tokens or tokens[0].internal_type != formatting_internal_type:
             augmented_tokens.append(
                 Node(
                     start=0,
@@ -475,6 +379,7 @@ class Parser:
                     roles=["FORMATTING"],
                 )
             )
+        if tokens:
             augmented_tokens.append(tokens[0])
 
         for previous_token, next_token in zip(
@@ -498,7 +403,6 @@ class Parser:
             augmented_tokens.append(next_token)
 
         if tokens and tokens[-1].internal_type != formatting_internal_type:
-            augmented_tokens.append(tokens[-1])
             augmented_tokens.append(
                 Node(
                     start=tokens[-1].end,

@@ -10,5 +10,7 @@ bblfsh-start:
 		bblfsh/bblfshd\:v2.12.0 --log-level DEBUG
 	docker exec formatml_bblfshd bblfshctl driver install \
 javascript docker://bblfsh/javascript-driver\:v2.7.3
+	docker exec formatml_bblfshd bblfshctl driver install \
+java docker://bblfsh/java-driver\:v2.7.2
 
 .PHONY: check bblfsh-start

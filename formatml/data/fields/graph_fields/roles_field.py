@@ -4,7 +4,7 @@ from torch import cat, long as torch_long, Tensor, tensor
 
 from formatml.data.fields.field import Field
 from formatml.data.fields.graph_fields.graph_field import GraphField
-from formatml.parser import NodesSample
+from formatml.parsing.parser import Nodes
 from formatml.resources.vocabulary import Vocabulary
 from formatml.utils.registrable import register
 
@@ -21,11 +21,11 @@ class RolesField(GraphField[RolesFieldOutput]):
     def __init__(self, vocabulary: Vocabulary) -> None:
         self.vocabulary = vocabulary
 
-    def pre_tensorize(self, sample: NodesSample) -> None:
+    def pre_tensorize(self, sample: Nodes) -> None:
         for node in sample.nodes:
             self.vocabulary.add_items(node.roles)
 
-    def tensorize(self, sample: NodesSample) -> RolesFieldOutput:
+    def tensorize(self, sample: Nodes) -> RolesFieldOutput:
         roles_offsets = []
         roles: List[int] = []
         for node in sample.nodes:

@@ -6,7 +6,7 @@ from torch import cat, long as torch_long, Tensor, tensor
 
 from formatml.data.fields.field import Field
 from formatml.data.fields.graph_fields.graph_field import GraphField
-from formatml.parser import NodesSample
+from formatml.parsing.parser import Nodes
 from formatml.resources.vocabulary import Vocabulary
 from formatml.utils.registrable import register
 
@@ -24,7 +24,7 @@ class TypedDGLGraphField(GraphField[TypedGraphFieldOutput]):
         self.vocabulary = vocabulary
         self.vocabulary.add_items(edge_types)
 
-    def tensorize(self, sample: NodesSample) -> TypedGraphFieldOutput:
+    def tensorize(self, sample: Nodes) -> TypedGraphFieldOutput:
         nodes, node_index, token_indexes = sample
         sources, targets, types = [], [], []
 

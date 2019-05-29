@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Sized, Tuple
 from formatml.data.instance import Instance
 from formatml.datasets.dataset import Dataset
 from formatml.datasets.repository_dataset import RepositoryDataset
+from formatml.parsing.parser import Parser
 from formatml.utils.registrable import register
 
 
@@ -24,6 +25,7 @@ class RepositoriesDataset(Dataset):
         tensor_dir: str,
         repositories: List[Tuple[str, str, str]],
         instance: Instance,
+        parser: Parser,
         parallel_downloads: int = 10,
         bblfsh_endpoint: str = "0.0.0.0:9999",
         formatting_internal_type: str = "Formatting",
@@ -56,6 +58,7 @@ class RepositoriesDataset(Dataset):
                 repo_name=repo_name,
                 version=version,
                 instance=instance,
+                parser=parser,
                 bblfsh_endpoint=bblfsh_endpoint,
                 formatting_internal_type=formatting_internal_type,
                 n_workers=n_workers,
