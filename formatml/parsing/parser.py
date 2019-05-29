@@ -149,10 +149,10 @@ class Nodes(NamedTuple):
 class BblfshNodeConverter:
     """Convert `BblfshNode`-s to `Node`-s (and handle bytes-unicode conversion)."""
 
-    def __init__(self, file_content: str, dont_convert_to_utf8: bool = False):
+    def __init__(self, file_content: str, convert_to_utf8: bool):
         """Contruct a converter."""
         self.file_content = file_content
-        self.dont_convert_to_utf8 = dont_convert_to_utf8
+        self.convert_to_utf8 = convert_to_utf8
         self.binary_to_str: Dict[int, int] = {}
         current_offset = 0
         for i, char in enumerate(self.file_content):
@@ -170,7 +170,7 @@ class BblfshNodeConverter:
         if position:
             start = bblfsh_node.start_position.offset
             end = bblfsh_node.end_position.offset
-            if not self.dont_convert_to_utf8:
+            if self.convert_to_utf8:
                 start = self.binary_to_str[start]
                 end = self.binary_to_str[end]
             token = self.file_content[start:end]
@@ -200,6 +200,7 @@ class Parser:
         bblfsh_language: str,
         reserved: List[str],
         uast_fixers: Optional[Dict[str, Callable[[BblfshNode], None]]] = None,
+        convert_to_utf8: bool = True,
     ) -> None:
         cls._bblfsh_language = bblfsh_language
         cls._parser_reserved = re_compile(
@@ -207,6 +208,7 @@ class Parser:
         )
         cls._parser_space = re_compile(r"\s+")
         cls._uast_fixers = uast_fixers if uast_fixers else {}
+        cls._convert_to_utf8 = convert_to_utf8
         cls._logger = getLogger(cls.__name__)
 
     def __init__(self) -> None:
@@ -256,7 +258,9 @@ class Parser:
         file_content = (repository_path / file_path).read_text(
             encoding="utf-8", errors="replace"
         )
-        bblfsh_node_converter = BblfshNodeConverter(file_content)
+        bblfsh_node_converter = BblfshNodeConverter(
+            file_content, convert_to_utf8=self._convert_to_utf8
+        )
         root_node = bblfsh_node_converter.bblfsh_node_to_node(response.uast, None)
         to_visit = [(response.uast, root_node)]
         non_formatting_tokens = []
