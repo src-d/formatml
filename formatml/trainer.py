@@ -7,17 +7,18 @@ from pathlib import Path
 from pickle import dump as pickle_dump
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
-from tensorboardX import SummaryWriter
 from torch.nn.utils.rnn import PackedSequence
 from torch.optim.optimizer import Optimizer
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import random_split
+from torch.utils.tensorboard import SummaryWriter
 
 from formatml.datasets.dataset import Dataset
 from formatml.models.model import Model, ModelOutput
 from formatml.modules.misc.scheduler import Scheduler
 from formatml.utils.from_params import from_params
 from formatml.utils.registrable import register_from_enum
+from formatml.utils.torch_helpers import data_if_packed
 
 
 @unique
@@ -42,19 +43,27 @@ def register_metric(name: str) -> Callable[[Metric], Metric]:
 
 @register_metric(name="cross_entropy")
 def _cross_entropy(forward: ModelOutput, labels: PackedSequence) -> float:
-    return forward.loss.data.item()
+    return data_if_packed(forward.loss).item()
 
 
 @register_metric(name="perplexity")
 def _perplexity(forward: ModelOutput, labels: PackedSequence) -> float:
-    return 2 ** forward.loss.data.item()
+    return 2 ** data_if_packed(forward.loss).item()
 
 
-@register_metric(name="accuracy")
+@register_metric(name="mrr")
 def _accuracy(forward: ModelOutput, labels: PackedSequence) -> float:
+    ground_truth = data_if_packed(labels).argmax(dim=0)
+    predictions = data_if_packed(forward.output)[:, 1].argsort(descending=True)
+    rank = (predictions == ground_truth).nonzero().item()
+    return 1 / (rank + 1)
+
+
+@register_metric(name="accuracy_max_decoding")
+def _accuracy_max_decoding(forward: ModelOutput, labels: PackedSequence) -> float:
     return (
-        forward.output.data.argmax(dim=1) == labels.data
-    ).sum().item() / labels.data.nelement()
+        data_if_packed(forward.output).argmax(dim=1) == data_if_packed(labels)
+    ).sum().item() / data_if_packed(labels).nelement()
 
 
 @from_params

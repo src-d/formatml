@@ -47,6 +47,16 @@ class Node:
         self.start = start
         self.end = end
 
+    def __repr__(self) -> str:
+        return (
+            f"Node(token={self.token}, "
+            f"internal_type={self.internal_type}, "
+            f"roles={self.roles}, "
+            f"parent={id(self.parent)}, "
+            f"start={self.start}, "
+            f"end={self.end})"
+        )
+
 
 class Nodes(NamedTuple):
     """Utilities for lists of nodes."""
@@ -55,15 +65,42 @@ class Nodes(NamedTuple):
     node_index: Dict[int, int]
     token_indexes: List[int]
 
-    @staticmethod
-    def to_tree(token_nodes: List[Node], file_content: str) -> Dict[str, Any]:
+    def to_tree(self, file_content: str) -> Dict[str, Any]:
         """
         Convert a list of nodes into a tree serializable by asdf.
 
-        :param token_nodes: List of nodes to convert.
         :param file_content: Content of the file from which the nodes were extracted.
         :return: Dictionary serializable by asdf.
         """
+        roles_offset = 0
+        roles_offsets = []
+        for node in self.nodes:
+            roles_offsets.append(roles_offset)
+            roles_offset += len(node.roles)
+        for node in self.nodes:
+            if node.internal_type == "WhiteSpace":
+                assert node.token.isspace()
+
+        return {
+            "file_content": array([file_content], dtype=unicode_),
+            "internal_types": array(
+                [node.internal_type for node in self.nodes], dtype=unicode_
+            ),
+            "roles_list": array(
+                [role for node in self.nodes for role in node.roles], dtype=unicode_
+            ),
+            "roles_offsets": array(roles_offsets, dtype=uint32),
+            "parents": array(
+                [self.node_index.get(id(node.parent), -1) for node in self.nodes],
+                dtype=int32,
+            ),
+            "starts": array([node.start for node in self.nodes], dtype=uint32),
+            "ends": array([node.end for node in self.nodes], dtype=uint32),
+            "token_node_indexes": array(self.token_indexes, dtype=uint32),
+        }
+
+    @staticmethod
+    def from_token_nodes(token_nodes: List[Node]) -> "Nodes":
         all_nodes = []
         seen: Set[int] = set()
         for node in token_nodes:
@@ -77,32 +114,9 @@ class Nodes(NamedTuple):
         token_node_indexes = [
             node_to_index[id(token_node)] for token_node in token_nodes
         ]
-        roles_offset = 0
-        roles_offsets = []
-        for node in all_nodes:
-            roles_offsets.append(roles_offset)
-            roles_offset += len(node.roles)
-        for node in all_nodes:
-            if node.internal_type == "WhiteSpace":
-                assert node.token.isspace()
-
-        return {
-            "file_content": array([file_content], dtype=unicode_),
-            "internal_types": array(
-                [node.internal_type for node in all_nodes], dtype=unicode_
-            ),
-            "roles_list": array(
-                [role for node in all_nodes for role in node.roles], dtype=unicode_
-            ),
-            "roles_offsets": array(roles_offsets, dtype=uint32),
-            "parents": array(
-                [node_to_index.get(id(node.parent), -1) for node in all_nodes],
-                dtype=int32,
-            ),
-            "starts": array([node.start for node in all_nodes], dtype=uint32),
-            "ends": array([node.end for node in all_nodes], dtype=uint32),
-            "token_node_indexes": array(token_node_indexes, dtype=uint32),
-        }
+        return Nodes(
+            nodes=all_nodes, node_index=node_to_index, token_indexes=token_node_indexes
+        )
 
     @staticmethod
     def from_tree(tree: Dict[str, Any]) -> "Nodes":
@@ -211,7 +225,12 @@ class Parser:
         cls._convert_to_utf8 = convert_to_utf8
         cls._logger = getLogger(cls.__name__)
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        bblfsh_endpoint: str = "0.0.0.0:9999",
+        formatting_internal_type: str = "Formatting",
+        split_formatting: bool = False,
+    ) -> None:
         """Construct a parser."""
         for attr in [
             "_bblfsh_language",
@@ -225,24 +244,27 @@ class Parser:
                     f"The {self.__class__.__name__} is a base class and should not be "
                     "used directly."
                 )
+        self._bblfsh_client = BblfshClient(bblfsh_endpoint)
+        self._formatting_internal_type = formatting_internal_type
+        self._split_formatting = split_formatting
 
-    def parse(
-        self,
-        repository_path: Path,
-        file_path: Path,
-        bblfsh_client: BblfshClient,
-        formatting_internal_type: str,
-    ) -> List[Node]:
+    @property
+    def formatting_internal_type(self) -> str:
+        return self._formatting_internal_type
+
+    @property
+    def split_formatting(self) -> bool:
+        return self._split_formatting
+
+    def parse(self, repository_path: Path, file_path: Path) -> Nodes:
         """
         Parse a file into a list of `Node`s.
 
         :param repository_path: Path of the folder that contains the file to parse.
         :param file_path: Path of the file to parse.
-        :param bblfsh_client: Babelfish client to use for parsing.
-        :param formatting_internal_type: New internal type to use for formatting nodes.
         :return: List of parsed `Node`s.
         """
-        response = bblfsh_client.parse(
+        response = self._bblfsh_client.parse(
             str(repository_path / file_path), language=self._bblfsh_language
         )
         if response.status != 0:
@@ -267,9 +289,11 @@ class Parser:
         while to_visit:
             current_bblfsh_node, current_node = to_visit.pop()
             if current_bblfsh_node.internal_type in self._uast_fixers:
-                self._uast_fixers[current_bblfsh_node.internal_type](
-                    current_bblfsh_node
-                )
+                current_bblfsh_node = self._uast_fixers[
+                    current_bblfsh_node.internal_type
+                ](current_bblfsh_node)
+                if current_bblfsh_node is None:
+                    continue
             to_visit.extend(
                 (
                     bblfsh_child,
@@ -326,7 +350,7 @@ class Parser:
                             end=match.end() + pos,
                             token=token,
                             parent=None,
-                            internal_type=formatting_internal_type,
+                            internal_type=self._formatting_internal_type,
                             roles=["FORMATTING"],
                         )
                     )
@@ -340,7 +364,7 @@ class Parser:
             tokens.append(node)
             pos = node.end
 
-        tokens = self._augment_tokens(tokens, formatting_internal_type)
+        tokens = self._augment_tokens(tokens)
 
         closest_left_node = None
         for i, token_node in enumerate(tokens):
@@ -351,6 +375,9 @@ class Parser:
                 token_node.parent = (
                     found_parent if found_parent is not None else root_node
                 )
+
+        if self._split_formatting:
+            tokens = self._perform_split_formatting(tokens)
 
         reconstructed_file_content = "".join(node.token for node in tokens)
 
@@ -364,22 +391,19 @@ class Parser:
                 )
             )
             self._logger.warn("reconstructed file is not equal to original:\n%s", diff)
-        return tokens
+        return Nodes.from_token_nodes(tokens)
 
-    @staticmethod
-    def _augment_tokens(
-        tokens: List[Node], formatting_internal_type: str
-    ) -> List[Node]:
+    def _augment_tokens(self, tokens: List[Node]) -> List[Node]:
         augmented_tokens = []
 
-        if not tokens or tokens[0].internal_type != formatting_internal_type:
+        if not tokens or tokens[0].internal_type != self._formatting_internal_type:
             augmented_tokens.append(
                 Node(
                     start=0,
                     end=0,
                     token="",
                     parent=None,
-                    internal_type=formatting_internal_type,
+                    internal_type=self._formatting_internal_type,
                     roles=["FORMATTING"],
                 )
             )
@@ -391,8 +415,8 @@ class Parser:
         ):
             assert previous_token.end == next_token.start
             if (
-                previous_token.internal_type != formatting_internal_type
-                and next_token.internal_type != formatting_internal_type
+                previous_token.internal_type != self._formatting_internal_type
+                and next_token.internal_type != self._formatting_internal_type
             ):
                 augmented_tokens.append(
                     Node(
@@ -400,20 +424,20 @@ class Parser:
                         end=previous_token.end,
                         token="",
                         parent=None,
-                        internal_type=formatting_internal_type,
+                        internal_type=self._formatting_internal_type,
                         roles=["FORMATTING"],
                     )
                 )
             augmented_tokens.append(next_token)
 
-        if tokens and tokens[-1].internal_type != formatting_internal_type:
+        if tokens and tokens[-1].internal_type != self._formatting_internal_type:
             augmented_tokens.append(
                 Node(
                     start=tokens[-1].end,
                     end=tokens[-1].end,
                     token="",
                     parent=None,
-                    internal_type=formatting_internal_type,
+                    internal_type=self._formatting_internal_type,
                     roles=["FORMATTING"],
                 )
             )
@@ -450,3 +474,33 @@ class Parser:
                 return current_right_ancestor
             current_right_ancestor = current_right_ancestor.parent
         return None
+
+    def _perform_split_formatting(self, nodes: List[Node]) -> List[Node]:
+        """
+        Split each formatting node into a list of one node per character.
+
+        :param nodes: Sequence of token `Node`-s.
+        :return: The new sequence, with split formatting nodes.
+        """
+        new_nodes = []
+        for node in nodes:
+            if node.internal_type == self._formatting_internal_type and node.token:
+                for i, char in enumerate(node.token):
+                    new_nodes.append(
+                        Node(
+                            token=char,
+                            internal_type=node.internal_type,
+                            roles=node.roles,
+                            parent=node.parent,
+                            start=node.start + i,
+                            end=node.start + i + 1,
+                        )
+                    )
+            else:
+                new_nodes.append(node)
+        return new_nodes
+
+    def __del__(self) -> None:
+        if self._bblfsh_client:
+            self._bblfsh_client._channel.close()
+            self._bblfsh_client._channel = self._bblfsh_client._stub = None

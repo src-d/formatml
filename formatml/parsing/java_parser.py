@@ -117,13 +117,22 @@ def _remove_children(bblfsh_node: BblfshNode) -> None:
         while True:
             bblfsh_node.children.pop()
     except IndexError:
-        pass
+        return bblfsh_node
+
+
+def _exclude_if_empty(bblfsh_node: BblfshNode) -> None:
+    if not bblfsh_node.children:
+        return None
+    return bblfsh_node
 
 
 _uast_fixers = dict(
     BlockComment=_remove_children,
     Javadoc=_remove_children,
     LineComment=_remove_children,
+    Dimension=_exclude_if_empty,
+    Block=_exclude_if_empty,
+    AnonymousClassDeclaration=_exclude_if_empty,
 )
 
 
