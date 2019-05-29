@@ -145,7 +145,7 @@ class RepositoryDataset(Dataset):
 
     def tensorize(self) -> None:
         finished_marker = self.tensor_dir / "finished"
-        if True or not finished_marker.is_file():
+        if not finished_marker.is_file():
             self._logger.info(f"Pre-tensorizing {self.canonical_name}")
             for file_path in self.parse_dir.rglob("*.asdf"):
                 with asdf_open(str(file_path)) as af:
@@ -162,8 +162,6 @@ class RepositoryDataset(Dataset):
                     ],
                 )
             self._logger.info(f"Tensorized  {self.canonical_name}")
-            with bz2_open(self.tensor_dir / "instance.pickle.bz2", "wb") as fh:
-                dump(self.instance, fh)
         self.pickles = list(
             sorted((self.tensor_dir / "pickle").rglob("*.pickle.bz2"), key=str)
         )

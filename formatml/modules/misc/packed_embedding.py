@@ -1,7 +1,7 @@
 from torch.nn import Embedding, Module
 from torch.nn.utils.rnn import PackedSequence
 
-from formatml.resources.vocabulary import Vocabulary
+from formatml.data.vocabulary import Vocabulary
 from formatml.utils.from_params import from_params
 
 

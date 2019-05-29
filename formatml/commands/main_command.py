@@ -39,6 +39,7 @@ class MainCommand(Command):
         dataset.download()
         dataset.pre_tensorize()
         dataset.tensorize()
+        context.save_resources()
         self._logger.info(f"Dataset of size {len(dataset)}")
         model = Model.from_params(self.config["model"], context)  # type: ignore
         model(dataset[0])
