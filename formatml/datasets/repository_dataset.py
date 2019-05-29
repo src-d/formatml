@@ -15,7 +15,7 @@ from requests import get as requests_get
 
 from formatml.data.instance import Instance
 from formatml.datasets.dataset import Dataset
-from formatml.parser import NodesSample, Parser, ParsingException
+from formatml.parsing.parser import Nodes, Parser, ParsingException
 from formatml.utils.registrable import register
 
 
@@ -34,6 +34,7 @@ class RepositoryDataset(Dataset):
         repo_name: str,
         version: str,
         instance: Instance,
+        parser: Parser,
         bblfsh_endpoint: str = "0.0.0.0:9999",
         formatting_internal_type: str = "Formatting",
         n_workers: int = cpu_count(),
@@ -55,6 +56,7 @@ class RepositoryDataset(Dataset):
         self.formatting_internal_type = formatting_internal_type
         # Tensorizing parameters.
         self.instance = instance
+        self.parser = parser
         self.n_workers = n_workers
         self.pickle_protocol = pickle_protocol
         self.canonical_name = f"{self.user_name}-{self.repo_name}-{self.version}"
@@ -89,7 +91,6 @@ class RepositoryDataset(Dataset):
             raise e
 
     def pre_tensorize(self) -> None:
-        parser = Parser()
         try:
             bblfsh_client = BblfshClient(self.bblfsh_endpoint)
             self._logger.info(f"Parsing {self.download_path.name}")
@@ -109,7 +110,7 @@ class RepositoryDataset(Dataset):
                     try:
                         start = time()
                         self._logger.debug(f"Parsing {file_path_relative}")
-                        nodes = parser.parse(
+                        nodes = self.parser.parse(
                             repository_root_path,
                             file_path_relative,
                             bblfsh_client,
@@ -131,7 +132,7 @@ class RepositoryDataset(Dataset):
                     ).open("wb") as fh:
                         af = AsdfFile(
                             {
-                                "nodes": NodesSample.to_tree(
+                                "nodes": Nodes.to_tree(
                                     nodes, file_path.read_text(encoding="utf-8")
                                 )
                             }
@@ -148,7 +149,7 @@ class RepositoryDataset(Dataset):
             self._logger.info(f"Pre-tensorizing {self.canonical_name}")
             for file_path in self.parse_dir.rglob("*.asdf"):
                 with asdf_open(str(file_path)) as af:
-                    nodes_instance = NodesSample.from_tree(af.tree["nodes"])
+                    nodes_instance = Nodes.from_tree(af.tree["nodes"])
                     self.instance.pre_tensorize(nodes_instance)
             self._logger.info(f"Pre-tensorized  {self.canonical_name}")
             self._logger.info(f"Tensorizing {self.canonical_name}")
@@ -181,7 +182,7 @@ class RepositoryDataset(Dataset):
     def _tensorize_worker(self, file_path: Path) -> None:
         self._logger.debug(f"Tensorizing {file_path}")
         with asdf_open(str(self.parse_dir / file_path)) as af:
-            nodes_instance = NodesSample.from_tree(af.tree["nodes"])
+            nodes_instance = Nodes.from_tree(af.tree["nodes"])
         tensors = self.instance.tensorize(nodes_instance)
         output_dir = (self.tensor_dir / "pickle" / file_path).parent
         output_dir.mkdir(parents=True, exist_ok=True)
