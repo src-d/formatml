@@ -19,14 +19,16 @@ matrix:
         - make check
     - stage: test
       python: 3.7
-      script:
-        - coverage run --concurrency=multiprocessing -m unittest discover
-        - coverage combine
       install:
         - travis_retry make bblfsh-start
         - pip install --upgrade pip cython codecov
         - pip install https://download.pytorch.org/whl/cpu/torch-1.1.0-cp37-cp37m-linux_x86_64.whl
         - pip install .
+      script:
+        - coverage run --concurrency=multiprocessing -m unittest discover
+        - coverage combine
+      after_success:
+        - codecov
   fast_finish: true
 notifications:
   email: false
