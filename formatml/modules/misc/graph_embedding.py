@@ -5,7 +5,7 @@ from dgl import DGLGraph
 from torch import cat
 from torch.nn import Embedding, EmbeddingBag, Module, ModuleList
 
-from formatml.resources.vocabulary import Vocabulary
+from formatml.data.vocabulary import Vocabulary
 from formatml.utils.from_params import from_params
 
 

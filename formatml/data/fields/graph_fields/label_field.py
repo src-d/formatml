@@ -5,8 +5,8 @@ from torch.nn.utils.rnn import pack_sequence, PackedSequence
 
 from formatml.data.fields.field import Field
 from formatml.data.fields.graph_fields.graph_field import GraphField
+from formatml.data.vocabulary import Vocabulary
 from formatml.parsing.parser import Nodes
-from formatml.resources.vocabulary import Vocabulary
 from formatml.utils.registrable import register
 from formatml.utils.torch_helpers import unpack_packed_sequence
 

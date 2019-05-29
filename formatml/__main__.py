@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 from json import loads as json_loads
+from pathlib import Path
 
 from _jsonnet import evaluate_file as jsonnet_evaluate_file
 from coloredlogs import install as coloredlogs_install
@@ -25,8 +26,11 @@ def main() -> None:
     coloredlogs_install(
         level=args.log_level, fmt="%(name)27s %(levelname)8s %(message)s"
     )
-    context = Context()
-    Command.from_params(config, context=context).run(context=context)  # type: ignore
+
+    context = Context(Path(config.get("context_cache_dir")))
+    Command.from_params(config["command"], context=context).run(  # type: ignore
+        context=context
+    )
 
 
 if __name__ == "__main__":
