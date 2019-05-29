@@ -129,7 +129,11 @@ _uast_fixers = dict(
 
 @register(cls=Parser, name="java")
 class JavaParser(
-    Parser, bblfsh_language="java", reserved=_reserved, uast_fixers=_uast_fixers
+    Parser,
+    bblfsh_language="java",
+    reserved=_reserved,
+    uast_fixers=_uast_fixers,
+    convert_to_utf8=False,
 ):
     """Parse files into list of nodes."""
 
