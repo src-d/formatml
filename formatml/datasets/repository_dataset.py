@@ -144,28 +144,35 @@ class RepositoryDataset(Dataset):
             bblfsh_client._channel = bblfsh_client._stub = None
 
     def tensorize(self) -> None:
-        finished_marker = self.tensor_dir / "finished"
-        if not finished_marker.is_file():
-            self._logger.info(f"Pre-tensorizing {self.canonical_name}")
-            for file_path in self.parse_dir.rglob("*.asdf"):
-                with asdf_open(str(file_path)) as af:
-                    nodes_instance = Nodes.from_tree(af.tree["nodes"])
-                    self.instance.pre_tensorize(nodes_instance)
-            self._logger.info(f"Pre-tensorized  {self.canonical_name}")
-            self._logger.info(f"Tensorizing {self.canonical_name}")
-            with Pool(self.n_workers) as pool:
-                pool.map(
-                    self._tensorize_worker,
-                    [
-                        p.relative_to(self.parse_dir)
-                        for p in self.parse_dir.rglob("*.asdf")
-                    ],
-                )
-            self._logger.info(f"Tensorized  {self.canonical_name}")
-        self.pickles = list(
-            sorted((self.tensor_dir / "pickle").rglob("*.pickle.bz2"), key=str)
-        )
-        finished_marker.touch()
+        try:
+            # Cannot use multiprocessing if parser is an attribute of self.
+            # Hence this hack with try, finally and a backup/restore of self.parser.
+            parser = self.parser
+            del self.parser
+            finished_marker = self.tensor_dir / "finished"
+            if not finished_marker.is_file():
+                self._logger.info(f"Pre-tensorizing {self.canonical_name}")
+                for file_path in self.parse_dir.rglob("*.asdf"):
+                    with asdf_open(str(file_path)) as af:
+                        nodes_instance = Nodes.from_tree(af.tree["nodes"])
+                        self.instance.pre_tensorize(nodes_instance)
+                self._logger.info(f"Pre-tensorized  {self.canonical_name}")
+                self._logger.info(f"Tensorizing {self.canonical_name}")
+                with Pool(self.n_workers) as pool:
+                    pool.map(
+                        self._tensorize_worker,
+                        [
+                            p.relative_to(self.parse_dir)
+                            for p in self.parse_dir.rglob("*.asdf")
+                        ],
+                    )
+                self._logger.info(f"Tensorized  {self.canonical_name}")
+            self.pickles = list(
+                sorted((self.tensor_dir / "pickle").rglob("*.pickle.bz2"), key=str)
+            )
+            finished_marker.touch()
+        finally:
+            self.parser = parser
 
     def collate(self, tensors: List[Dict[str, Any]]) -> Dict[str, Any]:
         return self.instance.collate(tensors)
