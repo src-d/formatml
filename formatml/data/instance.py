@@ -2,10 +2,10 @@ from typing import Any, Dict, Generic, List, TypeVar
 
 from formatml.data.fields.field import Field
 from formatml.utils.from_params import from_params
+from formatml.utils.helpers import get_generic_arguments
 
 
 _T = TypeVar("_T")
-_TInstance = TypeVar("_TInstance", bound="Instance")
 
 
 @from_params
@@ -15,6 +15,10 @@ class Instance(Generic[_T]):
     def __init__(self, fields: Dict[str, Field]) -> None:
         """Construct an instance."""
         self.fields = fields
+        self._field_input_types = {
+            field: get_generic_arguments(Field, field.__class__)[0]
+            for field in fields.values()
+        }
 
     def pre_tensorize(self, inputs: _T) -> None:
         """
@@ -25,7 +29,7 @@ class Instance(Generic[_T]):
         :param inputs: Sample to use for the pre-tensorization.
         """
         for field in self.fields.values():
-            field.pre_tensorize(inputs)
+            field.pre_tensorize(self._select_input(field, inputs))
 
     def tensorize(self, inputs: _T) -> Dict[str, Any]:
         """
@@ -35,7 +39,7 @@ class Instance(Generic[_T]):
         :return: A tensor, or any object that will be directly fed to the model.
         """
         return {
-            field_name: field.tensorize(inputs)
+            field_name: field.tensorize(self._select_input(field, inputs))
             for field_name, field in self.fields.items()
         }
 
@@ -50,3 +54,9 @@ class Instance(Generic[_T]):
             field_name: field.collate(tensor[field_name] for tensor in tensors)
             for field_name, field in self.fields.items()
         }
+
+    def _select_input(self, field: Field, inputs: _T) -> Any:
+        field_inputs_cls = self._field_input_types[field]
+        if isinstance(inputs, field_inputs_cls):
+            return inputs
+        return inputs[field_inputs_cls]  # type: ignore
