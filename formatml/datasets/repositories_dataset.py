@@ -2,7 +2,6 @@ from bisect import bisect_right
 from logging import getLogger
 from multiprocessing import cpu_count
 from multiprocessing.pool import ThreadPool
-from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sized, Tuple
 
 
@@ -31,24 +30,12 @@ class RepositoriesDataset(Dataset):
         formatting_internal_type: str = "Formatting",
         n_workers: int = cpu_count(),
         pickle_protocol: int = 4,
-        download: bool = False,
-        pre_tensorize: bool = False,
-        tensorize: bool = False,
     ) -> None:
-        # Output directories.
-        self.download_dir = Path(download_dir).expanduser().resolve()
-        self.parse_dir = Path(parse_dir).expanduser().resolve()
-        self.tensor_dir = Path(tensor_dir).expanduser().resolve()
         # Downloading parameters.
-        self.repositories = repositories
         self.parallel_downloads = parallel_downloads
-        # Parsing parameters.
-        self.bblfsh_endpoint = bblfsh_endpoint
-        self.formatting_internal_type = formatting_internal_type
         # Tensorizing parameters.
         self.instance = instance
         self.n_workers = n_workers
-        self.pickle_protocol = pickle_protocol
         self._repositories = [
             RepositoryDataset(
                 root_download_dir=download_dir,
@@ -63,9 +50,6 @@ class RepositoriesDataset(Dataset):
                 formatting_internal_type=formatting_internal_type,
                 n_workers=n_workers,
                 pickle_protocol=pickle_protocol,
-                download=False,
-                pre_tensorize=False,
-                tensorize=False,
             )
             for user_name, repo_name, version in repositories
         ]

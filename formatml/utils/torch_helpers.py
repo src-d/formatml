@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Union
 
 from torch import Tensor, tensor
 from torch.nn.utils.rnn import PackedSequence
@@ -16,3 +16,9 @@ def unpack_packed_sequence(packed_sequence: PackedSequence) -> List[Tensor]:
             batch_sizes[i] -= 1
             i += 1
     return [tensor(l, dtype=packed_sequence.data.dtype) for l in result]
+
+
+def data_if_packed(input: Union[PackedSequence, Tensor]) -> Tensor:
+    if isinstance(input, PackedSequence):
+        return input.data
+    return input

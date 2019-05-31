@@ -10,7 +10,6 @@ from time import time
 from typing import Any, Dict, List
 
 from asdf import AsdfFile, open as asdf_open
-from bblfsh import BblfshClient
 from requests import get as requests_get
 
 from formatml.data.instance import Instance
@@ -39,9 +38,6 @@ class RepositoryDataset(Dataset):
         formatting_internal_type: str = "Formatting",
         n_workers: int = cpu_count(),
         pickle_protocol: int = 4,
-        download: bool = False,
-        pre_tensorize: bool = False,
-        tensorize: bool = False,
     ) -> None:
         # Output directories.
         self.root_download_dir = Path(root_download_dir).expanduser().resolve()
@@ -63,12 +59,6 @@ class RepositoryDataset(Dataset):
         self.download_path = self.root_download_dir / f"{self.canonical_name}.tar.gz"
         self.parse_dir = self.root_parse_dir / self.canonical_name
         self.tensor_dir = self.root_tensor_dir / self.canonical_name
-        if download:
-            self.download()
-            if pre_tensorize:
-                self.pre_tensorize()
-                if tensorize:
-                    self.tensorize()
 
     def download(self) -> None:
         self.root_download_dir.mkdir(parents=True, exist_ok=True)
@@ -91,57 +81,41 @@ class RepositoryDataset(Dataset):
             raise e
 
     def pre_tensorize(self) -> None:
-        try:
-            bblfsh_client = BblfshClient(self.bblfsh_endpoint)
-            self._logger.info(f"Parsing {self.download_path.name}")
-            self.parse_dir.mkdir(parents=True, exist_ok=True)
-            if (self.parse_dir / "finished").is_file():
-                return
-            with TemporaryDirectory(prefix="formatml-") as temporary_directory_name:
-                with tarfile_open(self.download_path) as tar:
-                    tar.extractall(path=temporary_directory_name)
-                children_path = list(Path(temporary_directory_name).iterdir())
-                assert (
-                    len(children_path) == 1
-                ), "Expected a root directory only in the tar."
-                repository_root_path = children_path[0].resolve(strict=True)
-                for file_path in repository_root_path.rglob("*.js"):
-                    file_path_relative = file_path.relative_to(repository_root_path)
-                    try:
-                        start = time()
-                        self._logger.debug(f"Parsing {file_path_relative}")
-                        nodes = self.parser.parse(
-                            repository_root_path,
-                            file_path_relative,
-                            bblfsh_client,
-                            self.formatting_internal_type,
-                        )
-                        self._logger.debug(
-                            f"Parsed  {file_path_relative} "
-                            f"into {len(nodes)} nodes "
-                            f"in {(time() - start) * 1000:.2f}ms"
-                        )
-                    except ParsingException:
-                        continue
-                    output_subdirectory = (
-                        self.parse_dir / "asdf" / file_path_relative.parent
+        self._logger.info(f"Parsing {self.download_path.name}")
+        self.parse_dir.mkdir(parents=True, exist_ok=True)
+        if (self.parse_dir / "finished").is_file():
+            return
+        with TemporaryDirectory(prefix="formatml-") as temporary_directory_name:
+            with tarfile_open(self.download_path) as tar:
+                tar.extractall(path=temporary_directory_name)
+            children_path = list(Path(temporary_directory_name).iterdir())
+            assert len(children_path) == 1, "Expected a root directory only in the tar."
+            repository_root_path = children_path[0].resolve(strict=True)
+            for file_path in repository_root_path.rglob("*.js"):
+                file_path_relative = file_path.relative_to(repository_root_path)
+                try:
+                    start = time()
+                    self._logger.debug(f"Parsing {file_path_relative}")
+                    nodes = self.parser.parse(repository_root_path, file_path_relative)
+                    self._logger.debug(
+                        f"Parsed  {file_path_relative} "
+                        f"into {len(nodes.nodes)} nodes "
+                        f"in {(time() - start) * 1000:.2f}ms"
                     )
-                    output_subdirectory.mkdir(parents=True, exist_ok=True)
-                    with (
-                        output_subdirectory / file_path.with_suffix(".asdf").name
-                    ).open("wb") as fh:
-                        af = AsdfFile(
-                            {
-                                "nodes": Nodes.to_tree(
-                                    nodes, file_path.read_text(encoding="utf-8")
-                                )
-                            }
-                        )
-                        af.write_to(fh, all_array_compression="bzp2")
-            (self.parse_dir / "finished").touch()
-        finally:
-            bblfsh_client._channel.close()
-            bblfsh_client._channel = bblfsh_client._stub = None
+                except ParsingException:
+                    continue
+                output_subdirectory = (
+                    self.parse_dir / "asdf" / file_path_relative.parent
+                )
+                output_subdirectory.mkdir(parents=True, exist_ok=True)
+                with (output_subdirectory / file_path.with_suffix(".asdf").name).open(
+                    "wb"
+                ) as fh:
+                    af = AsdfFile(
+                        dict(nodes=nodes.to_tree(file_path.read_text(encoding="utf-8")))
+                    )
+                    af.write_to(fh, all_array_compression="bzp2")
+        (self.parse_dir / "finished").touch()
 
     def tensorize(self) -> None:
         try:
