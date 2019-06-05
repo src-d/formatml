@@ -42,13 +42,15 @@ class TypedDGLGraphField(GraphField[TypedGraphFieldOutput]):
         for previous_token_index, next_token_index in zip(
             islice(token_indexes, 0, None), islice(token_indexes, 1, None)
         ):
-            sources.append(previous_token_index)
-            targets.append(next_token_index)
-            types.append(self.vocabulary.get_index("next_token"))
+            if "next_token" in self.vocabulary:
+                sources.append(previous_token_index)
+                targets.append(next_token_index)
+                types.append(self.vocabulary.get_index("next_token"))
 
-            sources.append(next_token_index)
-            targets.append(previous_token_index)
-            types.append(self.vocabulary.get_index("previous_token"))
+            if "previous_token" in self.vocabulary:
+                sources.append(next_token_index)
+                targets.append(previous_token_index)
+                types.append(self.vocabulary.get_index("previous_token"))
 
         graph = DGLGraph()
         graph.add_nodes(len(nodes))
@@ -65,10 +67,14 @@ class TypedDGLGraphField(GraphField[TypedGraphFieldOutput]):
         self, tensors: Iterable[TypedGraphFieldOutput]
     ) -> TypedGraphFieldOutput:
         tensors = list(tensors)
+        n_types = range(len(tensors[0].edges_by_type))
+        offset_edges_by_type: List[List[Tensor]] = [[] for _ in n_types]
+        offset = 0
+        for t in tensors:
+            for i in n_types:
+                offset_edges_by_type[i].append(t.edges_by_type[i] + offset)
+            offset += t.graph.number_of_edges()
         return TypedGraphFieldOutput(
             graph=dgl_batch([tensor.graph for tensor in tensors]),
-            edges_by_type=[
-                cat([tensor.edges_by_type[i] for tensor in tensors], dim=0)
-                for i in range(len(tensors[0].edges_by_type))
-            ],
+            edges_by_type=[cat(offset_edges_by_type[i], dim=0) for i in n_types],
         )

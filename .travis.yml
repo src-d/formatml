@@ -25,7 +25,7 @@ matrix:
         - pip install https://download.pytorch.org/whl/cpu/torch-1.1.0-cp37-cp37m-linux_x86_64.whl
         - pip install .
       script:
-        - coverage run --concurrency=multiprocessing -m unittest discover
+        - coverage run --concurrency=multiprocessing -m pytest
         - coverage combine
       after_success:
         - codecov
