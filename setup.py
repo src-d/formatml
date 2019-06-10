@@ -38,7 +38,7 @@ setup(
         "asdf",
         "dulwich",
         "tensorboardX",
-        "tensorflow",
+        "tf-nightly",
     ],
     include_package_data=True,
     license="Apache-2.0",
