@@ -28,9 +28,13 @@ class MainCommand(Command):
 
     def run(self, context: Context) -> None:
         """Run the training."""
-        sha, dirty = get_sha_and_dirtiness()
+        git_info = get_sha_and_dirtiness()
         config_copy = deepcopy(self.config)
-        config_copy["git_info"] = {"sha": sha, "dirty": dirty}
+        if git_info is None:
+            config_copy["git_info"] = None
+        else:
+            sha, dirty = git_info
+            config_copy["git_info"] = {"sha": sha, "dirty": dirty}
         self.run_dir.mkdir(parents=True, exist_ok=True)
         with (self.run_dir / "config.json").open(mode="w", encoding="utf8") as fh:
             json_dump(config_copy, fh, indent=2, sort_keys=True)
