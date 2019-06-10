@@ -4,14 +4,18 @@ from itertools import chain
 from pathlib import Path
 from pkgutil import walk_packages
 from sys import exit, path as sys_path, stderr
-from typing import Any, Iterable, List, Tuple, Type, TypeVar, Union
+from typing import Any, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
+from dulwich.errors import NotGitRepository
 from dulwich.porcelain import status
 from dulwich.repo import Repo
 
 
-def get_sha_and_dirtiness(prompt_on_dirty: bool = True) -> Tuple[str, bool]:
-    git_status = status()
+def get_sha_and_dirtiness(prompt_on_dirty: bool = True) -> Optional[Tuple[str, bool]]:
+    try:
+        git_status = status()
+    except NotGitRepository:
+        return None
     dirty = False
 
     def to_str(string: Union[str, bytes]) -> str:
