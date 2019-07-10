@@ -1,0 +1,8 @@
+md5: 6797e4c159145d1b8abb5f68ec6a1162
+wdir: ..
+outs:
+- md5: d36fd902a676b091eaf4cd4d6774abca.dir
+  path: codrep-data/raw
+  cache: true
+  metric: false
+  persist: false

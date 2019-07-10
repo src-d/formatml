@@ -18,7 +18,7 @@ class RolesField(GraphField[RolesFieldOutput]):
     def __init__(self) -> None:
         self.vocabulary = Vocabulary(unknown="<UNK>")
 
-    def pre_tensorize(self, sample: Nodes) -> None:
+    def index(self, sample: Nodes) -> None:
         for node in sample.nodes:
             self.vocabulary.add_items(node.roles)
 
