@@ -4,7 +4,6 @@ from torch import cat, long as torch_long, Tensor, tensor, zeros
 
 from formatml.data.fields.field import Field
 from formatml.datasets.codrep_dataset import CodRepLabel
-from formatml.utils.registrable import register
 
 
 class BinaryLabelsFieldOutput(NamedTuple):
@@ -15,7 +14,6 @@ class BinaryLabelsFieldOutput(NamedTuple):
     n_nodes: int
 
 
-@register(cls=Field, name="binary_labels")
 class BinaryLabelsField(Field[CodRepLabel, BinaryLabelsFieldOutput]):
     def tensorize(self, inputs: CodRepLabel) -> BinaryLabelsFieldOutput:
         indexes = tensor(inputs.formatting_indexes, dtype=torch_long)

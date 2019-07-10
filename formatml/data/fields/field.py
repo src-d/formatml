@@ -1,13 +1,10 @@
 from typing import Generic, Iterable, TypeVar
 
-from formatml.utils.from_params import from_params
-
 
 _TInputs = TypeVar("_TInputs")
 _TOutputs = TypeVar("_TOutputs")
 
 
-@from_params
 class Field(Generic[_TInputs, _TOutputs]):
     """Field of a sample."""
 

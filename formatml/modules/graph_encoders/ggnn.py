@@ -11,14 +11,12 @@ from torch import Tensor
 from torch.nn import GRUCell, Linear, ModuleList
 
 from formatml.modules.graph_encoders.graph_encoder import GraphEncoder
-from formatml.utils.registrable import register
 
 
 EdgeUDF = Callable[[EdgeBatch], Dict[str, Tensor]]
 NodeUDF = Callable[[NodeBatch], Dict[str, Tensor]]
 
 
-@register(cls=GraphEncoder, name="ggnn")
 class GGNN(GraphEncoder):
     """GGNN layer."""
 

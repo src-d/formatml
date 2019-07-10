@@ -1,12 +1,8 @@
 from typing import Any, Dict, List
 
-from torch.utils.data import ConcatDataset, Dataset as TorchDataset, Subset
-
-from formatml.utils.from_params import from_params
-from formatml.utils.registrable import register
+from torch.utils.data import Dataset as TorchDataset
 
 
-@from_params
 class Dataset(TorchDataset):
     def download(self) -> None:
         raise NotImplementedError()
@@ -19,7 +15,3 @@ class Dataset(TorchDataset):
 
     def collate(self, tensors: List[Dict[str, Any]]) -> Dict[str, Any]:
         raise NotImplementedError()
-
-
-register(cls=Dataset, name="concat")(ConcatDataset)
-register(cls=Dataset, name="subset")(Subset)

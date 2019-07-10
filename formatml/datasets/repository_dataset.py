@@ -15,10 +15,8 @@ from requests import get as requests_get
 from formatml.data.instance import Instance
 from formatml.datasets.dataset import Dataset
 from formatml.parsing.parser import Nodes, Parser, ParsingException
-from formatml.utils.registrable import register
 
 
-@register(cls=Dataset, name="repository")
 class RepositoryDataset(Dataset):
 
     _logger = getLogger(__name__)

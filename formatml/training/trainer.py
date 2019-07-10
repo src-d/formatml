@@ -5,7 +5,7 @@ from io import StringIO
 from logging import DEBUG, getLogger, INFO
 from pathlib import Path
 from pickle import dump as pickle_dump
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from torch.nn.utils.rnn import PackedSequence
 from torch.optim.optimizer import Optimizer
@@ -15,14 +15,10 @@ from torch.utils.tensorboard import SummaryWriter
 
 from formatml.datasets.dataset import Dataset
 from formatml.models.model import Model, ModelOutput
-from formatml.modules.misc.scheduler import Scheduler
-from formatml.utils.from_params import from_params
-from formatml.utils.registrable import register_from_enum
 from formatml.utils.torch_helpers import data_if_packed
 
 
 @unique
-@register_from_enum
 class DataType(Enum):
     Train = "train"
     Eval = "eval"
@@ -52,7 +48,7 @@ def _perplexity(forward: ModelOutput, labels: PackedSequence) -> float:
 
 
 @register_metric(name="mrr")
-def _accuracy(forward: ModelOutput, labels: PackedSequence) -> float:
+def _mrr(forward: ModelOutput, labels: PackedSequence) -> float:
     ground_truth = data_if_packed(labels).argmax(dim=0)
     predictions = data_if_packed(forward.output)[:, 1].argsort(descending=True)
     rank = (predictions == ground_truth).nonzero().item()
@@ -66,7 +62,6 @@ def _accuracy_max_decoding(forward: ModelOutput, labels: PackedSequence) -> floa
     ).sum().item() / data_if_packed(labels).nelement()
 
 
-@from_params
 class Trainer:
 
     _logger = getLogger(__name__)
@@ -76,10 +71,10 @@ class Trainer:
         dataset: Dataset,
         model: Model,
         optimizer: Optimizer,
-        scheduler: Scheduler,
+        scheduler: Any,
         epochs: int,
         batch_size: int,
-        run_dir: Path,
+        run_dir_path: Path,
         eval_every: int,
         train_eval_split: float,
         metric_names: List[str],
@@ -90,10 +85,10 @@ class Trainer:
         self.scheduler = scheduler
         self.epochs = epochs
         self.batch_size = batch_size
-        self.run_dir = run_dir
+        self.run_dir_path = run_dir_path
         self.eval_every = eval_every
         self.train_eval_split = train_eval_split
-        self._checkpoints_dir = self.run_dir / "checkpoints"
+        self._checkpoints_dir = self.run_dir_path / "checkpoints"
         self._writers: Dict[DataType, SummaryWriter] = {}
         self._accumulated_metrics: Dict[
             DataType, Dict[Metric, List[float]]
@@ -106,11 +101,11 @@ class Trainer:
         self._epochs_size = len(str(epochs))
 
     def train(self) -> None:
-        self.run_dir.mkdir(parents=True, exist_ok=True)
+        self.run_dir_path.mkdir(parents=True, exist_ok=True)
         self._checkpoints_dir.mkdir(parents=True, exist_ok=True)
         for data_type in DataType:
             self._writers[data_type] = SummaryWriter(
-                str(self.run_dir / data_type.value)
+                str(self.run_dir_path / data_type.value)
             )
         self._global_step = 0
         self.epochs_size = len(str(self.epochs))

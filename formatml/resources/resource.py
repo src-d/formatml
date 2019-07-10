@@ -4,11 +4,6 @@ from pathlib import Path
 from pickle import dump as pickle_dump, load as pickle_load
 from typing import Any, Dict, Optional
 
-from formatml.data.vocabulary import Vocabulary
-from formatml.utils.from_params import from_params
-from formatml.utils.helpers import date_template_to_path
-from formatml.utils.registrable import register
-
 
 class ResourceException(Exception):
     """Resource related exception."""
@@ -20,16 +15,6 @@ class Resource:
     pass
 
 
-register(cls=Resource, name="vocabulary")(Vocabulary)
-register(
-    cls=Resource,
-    name="date_template_path",
-    factory=date_template_to_path,
-    no_from_params=False,
-)(Path)
-
-
-@from_params
 class Context:
 
     _logger = getLogger(__name__)

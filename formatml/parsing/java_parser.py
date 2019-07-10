@@ -1,7 +1,6 @@
 from bblfsh import Node as BblfshNode
 
 from formatml.parsing.parser import Parser
-from formatml.utils.registrable import register
 
 
 _reserved = [
@@ -136,7 +135,6 @@ _uast_fixers = dict(
 )
 
 
-@register(cls=Parser, name="java")
 class JavaParser(
     Parser,
     bblfsh_language="java",
