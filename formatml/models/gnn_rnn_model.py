@@ -11,10 +11,8 @@ from formatml.modules.misc.graph_embedding import GraphEmbedding
 from formatml.modules.misc.packed_embedding import PackedEmbedding
 from formatml.modules.misc.selector import Selector
 from formatml.modules.misc.vocabulary_linear import VocabularyLinear
-from formatml.utils.registrable import register
 
 
-@register(cls=Model, name="gnn_rnn")
 class GNNRNNModel(Model):
     """GNN encoder followed by RNN decoder module."""
 

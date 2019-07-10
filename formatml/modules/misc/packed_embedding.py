@@ -2,10 +2,8 @@ from torch.nn import Embedding, Module
 from torch.nn.utils.rnn import PackedSequence
 
 from formatml.data.vocabulary import Vocabulary
-from formatml.utils.from_params import from_params
 
 
-@from_params
 class PackedEmbedding(Module):
     def __init__(self, dimension: int, vocabulary: Vocabulary):
         super().__init__()

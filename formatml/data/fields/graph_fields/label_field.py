@@ -3,11 +3,9 @@ from typing import Iterable, List, NamedTuple, Tuple
 from torch import long as torch_long, Tensor, tensor
 from torch.nn.utils.rnn import pack_sequence, PackedSequence
 
-from formatml.data.fields.field import Field
 from formatml.data.fields.graph_fields.graph_field import GraphField
 from formatml.data.vocabulary import Vocabulary
 from formatml.parsing.parser import Nodes
-from formatml.utils.registrable import register
 from formatml.utils.torch_helpers import unpack_packed_sequence
 
 
@@ -20,16 +18,12 @@ class LabelFieldOutput(NamedTuple):
     n_nodes: int
 
 
-@register(cls=Field, name="label")
 class LabelField(GraphField[LabelFieldOutput]):
-    def __init__(
-        self, *, vocabulary: Vocabulary, formatting_internal_type: str = "Formatting"
-    ) -> None:
-        self.vocabulary = vocabulary
+    def __init__(self, *, formatting_internal_type: str = "Formatting") -> None:
+        self.vocabulary = Vocabulary(unknown="<UNK>")
         self.vocabulary.add_item("<PAD>")
         self.vocabulary.add_item("<GO>")
         self.vocabulary.add_item("<STOP>")
-        self.vocabulary.add_item("<UNK>")
         self.formatting_internal_type = formatting_internal_type
 
     def pre_tensorize(self, sample: Nodes) -> None:

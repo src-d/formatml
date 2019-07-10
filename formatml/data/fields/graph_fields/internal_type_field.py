@@ -2,17 +2,14 @@ from typing import Iterable
 
 from torch import cat as torch_cat, long as torch_long, Tensor, tensor
 
-from formatml.data.fields.field import Field
 from formatml.data.fields.graph_fields.graph_field import GraphField
 from formatml.data.vocabulary import Vocabulary
 from formatml.parsing.parser import Nodes
-from formatml.utils.registrable import register
 
 
-@register(cls=Field, name="internal_type")
 class InternalTypeField(GraphField[Tensor]):
-    def __init__(self, vocabulary: Vocabulary) -> None:
-        self.vocabulary = vocabulary
+    def __init__(self) -> None:
+        self.vocabulary = Vocabulary(unknown="<UNK>")
 
     def pre_tensorize(self, sample: Nodes) -> None:
         for node in sample.nodes:

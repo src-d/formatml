@@ -8,10 +8,8 @@ from formatml.models.model import Model, ModelOutput
 from formatml.modules.graph_encoders.graph_encoder import GraphEncoder
 from formatml.modules.misc.graph_embedding import GraphEmbedding
 from formatml.modules.misc.selector import Selector
-from formatml.utils.registrable import register
 
 
-@register(cls=Model, name="gnn_ff")
 class GNNFFModel(Model):
     """GNN encoder followed by a feed-forward output projector."""
 

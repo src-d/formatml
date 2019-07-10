@@ -3,10 +3,8 @@ from torch.nn.utils.rnn import PackedSequence
 
 from formatml.modules.decoders.decoder import Decoder
 from formatml.modules.misc.recurrent import Recurrent
-from formatml.utils.registrable import register
 
 
-@register(cls=Decoder, name="concat_conditioning_recurrent")
 class ConcatConditioningDecoder(Decoder):
     """Decoder whose inputs are augmented with a conditionning tensor."""
 

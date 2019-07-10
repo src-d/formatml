@@ -1,10 +1,7 @@
 from torch import Tensor
 from torch.nn import Module
 
-from formatml.utils.from_params import from_params
 
-
-@from_params
 class Selector(Module):
     """Wrapper around selection in a tensor."""
 

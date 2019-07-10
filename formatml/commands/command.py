@@ -1,15 +1,15 @@
-from typing import Any, Dict
-
-from formatml.resources.resource import Context
-from formatml.utils.from_params import from_params
+from argparse import ArgumentParser
+from typing import Any, Callable
 
 
-@from_params
-class Command:
-    """Base class for all commands."""
+commands = []
 
-    def __init__(self, config: Dict[str, Any]) -> None:
-        self.config = config
 
-    def run(self, context: Context) -> None:
-        raise NotImplementedError()
+def register_command(
+    name: str, description: str, parser_definer: Callable[[ArgumentParser], None]
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+    def wrapper(handler: Callable[..., Any]) -> Callable[..., Any]:
+        commands.append((name, description, parser_definer, handler))
+        return handler
+
+    return wrapper

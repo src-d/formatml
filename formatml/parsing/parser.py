@@ -8,8 +8,6 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
 from bblfsh import BblfshClient, Node as BblfshNode, role_name
 from numpy import array, int32, uint32, unicode_
 
-from formatml.utils.from_params import from_params
-
 
 class ParsingException(Exception):
     """Exception thrown in case of parsing failure."""
@@ -205,7 +203,6 @@ class BblfshNodeConverter:
         )
 
 
-@from_params
 class Parser:
     """Parse files into list of nodes."""
 

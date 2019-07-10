@@ -1,5 +1,4 @@
 from formatml.parsing.parser import Parser
-from formatml.utils.registrable import register
 
 
 _reserved = [
@@ -130,7 +129,6 @@ _reserved = [
 ]
 
 
-@register(cls=Parser, name="javascript")
 class JavaScriptParser(Parser, bblfsh_language="javascript", reserved=_reserved):
     """Parse JavaScript files into list of nodes."""
 

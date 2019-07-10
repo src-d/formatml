@@ -13,7 +13,6 @@ from numpy import array, uint32
 from formatml.data.instance import Instance
 from formatml.datasets.dataset import Dataset
 from formatml.parsing.parser import Nodes, Parser, ParsingException
-from formatml.utils.registrable import register
 
 
 class CodRepLabel(NamedTuple):
@@ -37,7 +36,6 @@ class CodRepLabel(NamedTuple):
         )
 
 
-@register(cls=Dataset, name="codrep")
 class CodRepDataset(Dataset):
 
     _logger = getLogger(__name__)
@@ -45,9 +43,9 @@ class CodRepDataset(Dataset):
     def __init__(
         self,
         *,
-        input_dir: str,
-        parse_dir: str,
-        tensor_dir: str,
+        input_dir: Path,
+        parse_dir: Path,
+        tensor_dir: Path,
         instance: Instance,
         parser: Parser,
         n_workers: int = cpu_count(),
@@ -56,9 +54,9 @@ class CodRepDataset(Dataset):
         tensorize: bool = False,
     ) -> None:
         # Output directories.
-        self.input_dir = Path(input_dir).expanduser().resolve()
-        self.parse_dir = Path(parse_dir).expanduser().resolve()
-        self.tensor_dir = Path(tensor_dir).expanduser().resolve()
+        self.input_dir = input_dir
+        self.parse_dir = parse_dir
+        self.tensor_dir = tensor_dir
         # Tensorizing parameters.
         self.instance = instance
         self.parser = parser

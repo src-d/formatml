@@ -6,10 +6,8 @@ from torch import cat
 from torch.nn import Embedding, EmbeddingBag, Module, ModuleList
 
 from formatml.data.vocabulary import Vocabulary
-from formatml.utils.from_params import from_params
 
 
-@from_params
 class GraphEmbedding(Module):
     """Embed features to initialize node and edge representations in a graph."""
 

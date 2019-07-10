@@ -1,9 +1,7 @@
 from datetime import datetime
-from importlib import import_module, invalidate_caches as importlib_invalidate_caches
 from itertools import chain
 from pathlib import Path
-from pkgutil import walk_packages
-from sys import exit, path as sys_path, stderr
+from sys import exit, stderr
 from typing import Any, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
 from dulwich.errors import NotGitRepository
@@ -36,7 +34,7 @@ def get_sha_and_dirtiness(prompt_on_dirty: bool = True) -> Optional[Tuple[str, b
         dirty = True
     if any(git_status.staged.values()):
         print("Those files are uncommited:", file=stderr)
-        print_files(chain(git_status.staged))
+        print_files(chain(*git_status.staged.values()))
         dirty = True
     if dirty:
         print("Are you sure you want to continue [y/n]? ", end="")
@@ -96,29 +94,3 @@ def get_generic_arguments(cls: Type[Any], subclass: Type[Any]) -> Tuple[Any, ...
 
 def istypevar(obj: Any) -> bool:
     return isinstance(obj, TypeVar)  # type: ignore
-
-
-def import_submodules(package_name: str, append_dot_path: bool = False) -> None:
-    """
-    Mostly from https://github.com/allenai/allennlp/blob/master/allennlp/common/util.py
-    Import all submodules under the given package.
-    Primarily useful so that people using AllenNLP as a library
-    can specify their own custom packages and have their custom
-    classes get loaded and registered.
-    """
-    importlib_invalidate_caches()
-
-    if append_dot_path:
-        sys_path.append(".")
-
-    module = import_module(package_name)
-    path = getattr(module, "__path__", [])
-    path_string = "" if not path else path[0]
-
-    for module_finder, name, _ in walk_packages(path):
-        # Sometimes when you import third-party libraries that are on your path,
-        # `pkgutil.walk_packages` returns those too, so we need to skip them.
-        if path_string and module_finder.path != path_string:
-            continue
-        subpackage = f"{package_name}.{name}"
-        import_submodules(subpackage)
