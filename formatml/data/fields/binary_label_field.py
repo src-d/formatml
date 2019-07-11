@@ -3,7 +3,7 @@ from typing import Iterable, NamedTuple
 from torch import cat, long as torch_long, Tensor, tensor, zeros
 
 from formatml.data.fields.field import Field
-from formatml.datasets.codrep_dataset import CodRepLabel
+from formatml.data.types.codrep_label import CodRepLabel
 
 
 class BinaryLabelsFieldOutput(NamedTuple):

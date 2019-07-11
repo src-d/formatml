@@ -1,0 +1,4 @@
+['remote "dot-dvc"']
+url = /home/mog/.dvc
+[core]
+remote = dot-dvc

@@ -8,9 +8,9 @@ _TOutputs = TypeVar("_TOutputs")
 class Field(Generic[_TInputs, _TOutputs]):
     """Field of a sample."""
 
-    def pre_tensorize(self, sample: _TInputs) -> None:
+    def index(self, sample: _TInputs) -> None:
         """
-        Compute things before the tensorization itself.
+        Index things before the tensorization itself.
 
         For example, fill a vocabulary object. Does nothing by default.
 

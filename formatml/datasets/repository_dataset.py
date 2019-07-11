@@ -127,7 +127,7 @@ class RepositoryDataset(Dataset):
                 for file_path in self.parse_dir.rglob("*.asdf"):
                     with asdf_open(str(file_path)) as af:
                         nodes_instance = Nodes.from_tree(af.tree["nodes"])
-                        self.instance.pre_tensorize(nodes_instance)
+                        self.instance.index(nodes_instance)
                 self._logger.info(f"Pre-tensorized  {self.canonical_name}")
                 self._logger.info(f"Tensorizing {self.canonical_name}")
                 with Pool(self.n_workers) as pool:

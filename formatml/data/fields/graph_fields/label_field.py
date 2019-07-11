@@ -26,7 +26,7 @@ class LabelField(GraphField[LabelFieldOutput]):
         self.vocabulary.add_item("<STOP>")
         self.formatting_internal_type = formatting_internal_type
 
-    def pre_tensorize(self, sample: Nodes) -> None:
+    def index(self, sample: Nodes) -> None:
         for node in sample.nodes:
             if node.internal_type == self.formatting_internal_type:
                 self.vocabulary.add_items(
