@@ -1,0 +1,13 @@
+md5: 96d8d71e4609e030ad791e1350aab8f4
+cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep parse codrep-experiments/data/raw
+  codrep-experiments/data/uasts
+wdir: ../..
+deps:
+- md5: d36fd902a676b091eaf4cd4d6774abca.dir
+  path: codrep-experiments/data/raw
+outs:
+- md5: 725b3b8211379b747a71e4edbc12b370.dir
+  path: codrep-experiments/data/uasts
+  cache: true
+  metric: false
+  persist: false

@@ -18,15 +18,11 @@ from formatml.pipelines.pipeline import register_step
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
+    parser.add_argument("input_dir", metavar="input-dir", help="Path to the UASTs.")
     parser.add_argument(
-        "--input-dir",
-        help="Path to the UASTs (defaults to %(default)s).",
-        default="codrep-data/uasts",
-    )
-    parser.add_argument(
-        "--output-file",
-        help="Where to output the pickled indexes (defaults to %(default)s).",
-        default="codrep-data/instance.pickle.bz2",
+        "output_file",
+        metavar="output-file",
+        help="Where to output the pickled indexes.",
     )
     parser.add_argument(
         "--encoder-edge-types",

@@ -17,20 +17,12 @@ from formatml.pipelines.pipeline import register_step
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
+    parser.add_argument("uasts_dir", metavar="uasts-dir", help="Path to the UASTs.")
     parser.add_argument(
-        "--uasts-dir",
-        help="Path to the UASTs (defaults to %(default)s).",
-        default="codrep-data/uasts",
+        "instance_file", metavar="instance-file", help="Path to the pickled instance."
     )
     parser.add_argument(
-        "--instance-file",
-        help="Path to the pickled instance.",
-        default="codrep-data/instance.pickle.bz2",
-    )
-    parser.add_argument(
-        "--output-dir",
-        help="Where to output the pickled tensors (defaults to %(default)s).",
-        default="codrep-data/tensors",
+        "output_dir", metavar="output-dir", help="Where to output the pickled tensors."
     )
     parser.add_argument(
         "--n-workers",

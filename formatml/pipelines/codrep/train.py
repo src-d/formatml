@@ -20,20 +20,15 @@ from formatml.training.trainer import Trainer
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
     parser.add_argument(
-        "--instance-file",
-        help="Path to the pickled instance.",
-        default="codrep-data/instance.pickle.bz2",
+        "instance_file", metavar="instance-file", help="Path to the pickled instance."
     )
     parser.add_argument(
-        "--tensors-dir",
-        help="Path the pickled tensors (defaults to %(default)s).",
-        default="codrep-data/tensors",
+        "tensors_dir", metavar="tensors-dir", help="Path the pickled tensors."
     )
     parser.add_argument(
-        "--output-dir",
-        help="Directory where the run artifacts will be output "
-        "(defaults to %(default)s).",
-        default="codrep-data/train",
+        "output_dir",
+        metavar="output-dir",
+        help="Directory where the run artifacts will be output.",
     )
     parser.add_argument(
         "--model-encoder-iterations",
