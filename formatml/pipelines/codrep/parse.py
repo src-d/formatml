@@ -14,14 +14,12 @@ from formatml.pipelines.pipeline import register_step
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
     parser.add_argument(
-        "--input-dir",
-        help="Path to the CodRep 2019 formatted dataset (defaults to %(default)s).",
-        default="codrep-data/raw",
+        "input_dir",
+        metavar="input-dir",
+        help="Path to the CodRep 2019 formatted dataset.",
     )
     parser.add_argument(
-        "--output-dir",
-        help="Where to output the UASTs (defaults to %(default)s).",
-        default="codrep-data/uasts",
+        "output_dir", metavar="output-dir", help="Where to output the UASTs."
     )
     parser.add_argument("--log-level", default="DEBUG", help="Logging verbosity.")
 

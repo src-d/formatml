@@ -1,0 +1,11 @@
+md5: 50dc15fa97b05f63b5b4087326711728
+wdir: ../..
+deps:
+- etag: '"6ac83f22774b682545e5d90ac6525dfb2abbe2bb"'
+  path: https://github.com/KTH/codrep-2019/archive/master.zip
+outs:
+- md5: 2e8847cca90ae9bdfa0d76f9747850ba
+  path: codrep-experiments/data/master.zip
+  cache: true
+  metric: false
+  persist: false

@@ -1,0 +1,15 @@
+md5: d0738cfb445389439a1d8a89502a3d83
+cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep tensorize codrep-experiments/data/uasts
+  codrep-experiments/data/instance.pickle.bz2 codrep-experiments/data/tensors
+wdir: ../..
+deps:
+- md5: 725b3b8211379b747a71e4edbc12b370.dir
+  path: codrep-experiments/data/uasts
+- md5: ce1e060f47b3a52966d4962539647f46
+  path: codrep-experiments/data/instance.pickle.bz2
+outs:
+- md5: 0b1181111ce05b11c407432193c459eb.dir
+  path: codrep-experiments/data/tensors
+  cache: true
+  metric: false
+  persist: false

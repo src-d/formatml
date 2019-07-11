@@ -1,0 +1,13 @@
+md5: f45196ea00410d52a68484e18aa49fc2
+cmd: unzip codrep-experiments/data/master.zip && mv codrep-2019-master/Datasets/learning
+  codrep-experiments/data/raw && rm -rf codrep-2019-master
+wdir: ../..
+deps:
+- md5: 2e8847cca90ae9bdfa0d76f9747850ba
+  path: codrep-experiments/data/master.zip
+outs:
+- md5: d36fd902a676b091eaf4cd4d6774abca.dir
+  path: codrep-experiments/data/raw
+  cache: true
+  metric: false
+  persist: false
