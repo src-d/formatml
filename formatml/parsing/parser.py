@@ -1,6 +1,7 @@
 from difflib import context_diff as unified_diff
 from itertools import islice
 from logging import getLogger
+from os import environ
 from pathlib import Path
 from re import compile as re_compile, escape as re_escape
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set
@@ -224,7 +225,7 @@ class Parser:
 
     def __init__(
         self,
-        bblfsh_endpoint: str = "0.0.0.0:9999",
+        bblfshd_endpoint: str = environ.get("BBLFSHD_ENDPOINT", "0.0.0.0:9432"),
         formatting_internal_type: str = "Formatting",
         split_formatting: bool = False,
     ) -> None:
@@ -241,7 +242,7 @@ class Parser:
                     f"The {self.__class__.__name__} is a base class and should not be "
                     "used directly."
                 )
-        self._bblfsh_client = BblfshClient(bblfsh_endpoint)
+        self._bblfsh_client = BblfshClient(bblfshd_endpoint)
         self._formatting_internal_type = formatting_internal_type
         self._split_formatting = split_formatting
 

@@ -1,13 +1,13 @@
-md5: 1fa153e25cbe27b33c94a6789a83a034
-cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep index codrep-experiments/data/uasts
-  codrep-experiments/data/instance.pickle.bz2
-wdir: ../..
+md5: 45ad44cea2d8bdfce513fc4f7f346d29
+cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep index ./data/uasts
+  ./data/instance.pickle.bz2
+wdir: ..
 deps:
 - md5: 725b3b8211379b747a71e4edbc12b370.dir
-  path: codrep-experiments/data/uasts
+  path: data/uasts
 outs:
 - md5: ce1e060f47b3a52966d4962539647f46
-  path: codrep-experiments/data/instance.pickle.bz2
+  path: data/instance.pickle.bz2
   cache: true
   metric: false
   persist: false
