@@ -1,0 +1,7 @@
+.dvc
+codrep-experiments
+*.egg-info
+.coverage.*
+.vscode
+.mypy_cache
+.pytest_cache

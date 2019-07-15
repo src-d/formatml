@@ -32,12 +32,10 @@ setup(
     entry_points={"console_scripts": ["formatml=formatml.__main__:main"]},
     install_requires=[
         "coloredlogs",
-        "jsonnet",
         "dgl",
         "bblfsh <3.0",
         "asdf",
         "dulwich",
-        "tensorboardX",
         "tf-nightly",
     ],
     include_package_data=True,
