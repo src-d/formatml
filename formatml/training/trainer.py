@@ -1,3 +1,4 @@
+from bisect import bisect_right
 from bz2 import open as bz2_open
 from collections import defaultdict
 from enum import Enum, unique
@@ -7,9 +8,9 @@ from pathlib import Path
 from pickle import dump as pickle_dump
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
+from dgl import unbatch
 from torch import device as torch_device
 from torch.cuda import is_available as cuda_is_available
-from torch.nn.utils.rnn import PackedSequence
 from torch.optim.optimizer import Optimizer
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import random_split
@@ -29,7 +30,7 @@ class DataType(Enum):
 
 _metrics = {}
 
-Metric = Callable[[ModelOutput, PackedSequence], float]
+Metric = Callable[[ModelOutput, Dict[str, Any]], float]
 
 
 def register_metric(name: str) -> Callable[[Metric], Metric]:
@@ -41,28 +42,47 @@ def register_metric(name: str) -> Callable[[Metric], Metric]:
 
 
 @register_metric(name="cross_entropy")
-def _cross_entropy(forward: ModelOutput, labels: PackedSequence) -> float:
+def _cross_entropy(forward: ModelOutput, sample: Dict[str, Any]) -> float:
     return data_if_packed(forward.loss).item()
 
 
 @register_metric(name="perplexity")
-def _perplexity(forward: ModelOutput, labels: PackedSequence) -> float:
+def _perplexity(forward: ModelOutput, sample: Dict[str, Any]) -> float:
     return 2 ** data_if_packed(forward.loss).item()
 
 
 @register_metric(name="mrr")
-def _mrr(forward: ModelOutput, labels: PackedSequence) -> float:
+def _mrr(forward: ModelOutput, sample: Dict[str, Any]) -> float:
+    label_field = sample["label"]
+    labels = label_field.labels
     ground_truth = data_if_packed(labels).argmax(dim=0)
-    predictions = data_if_packed(forward.output)[:, 1].argsort(descending=True)
-    rank = (predictions == ground_truth).nonzero().item()
-    return 1 / (rank + 1)
+    batched_graph = sample["typed_dgl_graph"].graph
+    graphs = unbatch(batched_graph)
+    start = 0
+    total_number_of_nodes = 0
+    bounds = []
+    numpy_indexes = label_field.indexes.cpu().numpy()
+    for graph in graphs:
+        total_number_of_nodes += graph.number_of_nodes()
+        end = bisect_right(numpy_indexes, total_number_of_nodes - 1)
+        bounds.append((start, end))
+        start = end
+    ranks = []
+    for start, end in bounds:
+        predictions = data_if_packed(forward.output)[start:end, 1].argsort(
+            descending=True
+        )
+        ground_truth = data_if_packed(labels)[start:end].argmax(dim=0)
+        ranks.append((predictions == ground_truth).nonzero().item())
+    return sum(1 / (rank + 1) for rank in ranks) / len(ranks)
 
 
 @register_metric(name="accuracy_max_decoding")
-def _accuracy_max_decoding(forward: ModelOutput, labels: PackedSequence) -> float:
+def _accuracy_max_decoding(forward: ModelOutput, sample: Dict[str, Any]) -> float:
+    label = sample["label"].labels
     return (
-        data_if_packed(forward.output).argmax(dim=1) == data_if_packed(labels)
-    ).sum().item() / data_if_packed(labels).nelement()
+        data_if_packed(forward.output).argmax(dim=1) == data_if_packed(label)
+    ).sum().item() / data_if_packed(label).nelement()
 
 
 class Trainer:
@@ -161,7 +181,7 @@ class Trainer:
             forward = self.model.forward(sample)
             self._compute_metrics(
                 forward=forward,
-                labels=sample["label"].labels,
+                sample=sample,
                 data_type=DataType.Train,
                 accumulate=False,
                 send_event=True,
@@ -179,10 +199,11 @@ class Trainer:
     def _eval_epoch(self, epoch: int) -> None:
         self.model.eval()
         for iteration, sample in enumerate(self._dataloaders[DataType.Eval], start=1):
+            sample = self.instance.to(sample, self.device)
             forward = self.model.forward(sample)
             self._compute_metrics(
                 forward=forward,
-                labels=sample["label"].labels,
+                sample=sample,
                 data_type=DataType.Eval,
                 accumulate=True,
                 send_event=False,
@@ -214,7 +235,7 @@ class Trainer:
     def _compute_metrics(
         self,
         forward: ModelOutput,
-        labels: PackedSequence,
+        sample: Dict[str, Any],
         data_type: DataType,
         accumulate: bool,
         send_event: bool,
@@ -222,7 +243,7 @@ class Trainer:
         iteration: int,
     ) -> None:
         self._log_values(
-            values=((metric, metric(forward, labels)) for metric in self._metrics),
+            values=((metric, metric(forward, sample)) for metric in self._metrics),
             data_type=data_type,
             send_event=send_event,
             accumulate=accumulate,
