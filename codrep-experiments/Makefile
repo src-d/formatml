@@ -22,7 +22,7 @@ bblfshd: setup
 			--detach \
 			--rm \
 			--name $(CODREP_BBLFSHD_NAME) \
-			--network $(CODREP_NETWORK)
+			--network $(CODREP_NETWORK) \
 			--privileged \
 			--publish 9432:9432 \
 			bblfsh/bblfshd:v2.14.0-drivers \
