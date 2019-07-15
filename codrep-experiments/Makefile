@@ -12,11 +12,8 @@ CODREP_INSTANCE_ARCHIVE ?= $(CODREP_DATA_DIR)/instance.pickle.bz2
 CODREP_TENSORS_DIR ?= $(CODREP_DATA_DIR)/tensors
 CODREP_TRAIN_DIR ?= $(CODREP_DATA_DIR)/train
 
-setup:
-	mkdir -p $(CODREP_STEPS_DIR) $(CODREP_DATA_DIR)
+bblfshd:
 	docker network create $(CODREP_NETWORK) > /dev/null 2>&1 || true
-
-bblfshd: setup
 	docker start $(CODREP_BBLFSHD_NAME) > /dev/null 2>&1 \
 		|| docker run \
 			--detach \
@@ -29,12 +26,13 @@ bblfshd: setup
 			--log-level DEBUG
 
 download: setup
+	mkdir -p $(CODREP_STEPS_DIR) $(CODREP_DATA_DIR)
 	dvc import-url \
 		--file $(CODREP_STEPS_DIR)/download.dvc \
 		$(CODREP_ARCHIVE_URL) \
 		$(CODREP_ARCHIVE)
 
-unzip: setup download
+unzip: download
 	dvc run \
 		--overwrite-dvcfile \
 		--file $(CODREP_STEPS_DIR)/unzip.dvc \
@@ -44,7 +42,7 @@ unzip: setup download
 			&& mv codrep-2019-master/Datasets/learning $(CODREP_RAW_DIR) \
 			&& rm -rf codrep-2019-master"
 
-parse: setup bblfshd unzip
+parse: bblfshd unzip
 	dvc run \
 		--overwrite-dvcfile \
 		--file $(CODREP_STEPS_DIR)/parse.dvc \
@@ -54,7 +52,7 @@ parse: setup bblfshd unzip
 			$(CODREP_RAW_DIR) \
 			$(CODREP_UASTS_DIR) 
 
-index: setup parse
+index: parse
 	dvc run \
 		--overwrite-dvcfile \
 		--file $(CODREP_STEPS_DIR)/index.dvc \
@@ -65,7 +63,7 @@ index: setup parse
 			$(CODREP_INSTANCE_ARCHIVE) \
 			$(CODREP_INDEX_ARGS)
 
-tensorize: setup index
+tensorize: index
 	dvc run \
 		--overwrite-dvcfile \
 		--file $(CODREP_STEPS_DIR)/tensorize.dvc \
@@ -78,7 +76,7 @@ tensorize: setup index
 			$(CODREP_TENSORS_DIR) \
 			$(CODREP_TENSORIZE_ARGS)
 
-train: setup tensorize
+train: tensorize
 	dvc run \
 		--overwrite-dvcfile \
 		--file $(CODREP_STEPS_DIR)/train.dvc \
@@ -91,4 +89,4 @@ train: setup tensorize
 			$(CODREP_TRAIN_DIR) \
 			$(CODREP_TRAIN_ARGS)
 
-.PHONY: bblfshd setup download unzip parse index tensorize train
+.PHONY: bblfshd download unzip parse index tensorize train
