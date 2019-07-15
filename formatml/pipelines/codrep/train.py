@@ -6,8 +6,6 @@ from pickle import load as pickle_load
 from typing import List, Optional
 
 from coloredlogs import install as coloredlogs_install
-from torch import device as torch_device
-from torch.cuda import is_available as cuda_is_available
 from torch.nn import Linear
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
@@ -136,13 +134,6 @@ def train(
     tensors_dir_path = Path(tensors_dir).expanduser().resolve()
     output_dir_path = Path(output_dir).expanduser().resolve()
 
-    if trainer_cuda is not None:
-        if not cuda_is_available():
-            raise RuntimeError("CUDA is not available on this system.")
-        device = torch_device("cuda:%d" % trainer_cuda)
-    else:
-        device = torch_device("cpu")
-
     with bz2_open(instance_file, "rb") as fh:
         instance = pickle_load(fh)
 
@@ -192,6 +183,6 @@ def train(
         model=model,
         optimizer=optimizer,
         scheduler=scheduler,
-        device=device,
+        cuda_device=trainer_cuda,
     )
     trainer.train()

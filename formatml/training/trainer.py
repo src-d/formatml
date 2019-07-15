@@ -8,6 +8,7 @@ from pickle import dump as pickle_dump
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from torch import device as torch_device
+from torch.cuda import is_available as cuda_is_available
 from torch.nn.utils.rnn import PackedSequence
 from torch.optim.optimizer import Optimizer
 from torch.utils.data.dataloader import DataLoader
@@ -81,11 +82,10 @@ class Trainer:
         eval_every: int,
         train_eval_split: float,
         metric_names: List[str],
-        device: torch_device,
+        cuda_device: Optional[int],
     ) -> None:
         self.dataset = dataset
         self.instance = instance
-        self.model = model.to(device)
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.epochs = epochs
@@ -93,7 +93,15 @@ class Trainer:
         self.run_dir_path = run_dir_path
         self.eval_every = eval_every
         self.train_eval_split = train_eval_split
-        self.device = device
+        if cuda_device is not None:
+            if not cuda_is_available():
+                raise RuntimeError("CUDA is not available on this system.")
+            self.use_cuda = True
+            self.device = torch_device("cuda:%d" % cuda_device)
+        else:
+            self.use_cuda = False
+            self.device = torch_device("cpu")
+        self.model = model.to(self.device)
         self._checkpoints_dir = self.run_dir_path / "checkpoints"
         self._writers: Dict[DataType, SummaryWriter] = {}
         self._accumulated_metrics: Dict[
@@ -127,6 +135,7 @@ class Trainer:
                 shuffle=True,
                 collate_fn=self.instance.collate,
                 batch_size=self.batch_size,
+                pin_memory=self.use_cuda,
                 num_workers=1,
             ),
             DataType.Eval: DataLoader(
@@ -134,6 +143,7 @@ class Trainer:
                 shuffle=True,
                 collate_fn=self.instance.collate,
                 batch_size=self.batch_size,
+                pin_memory=self.use_cuda,
                 num_workers=1,
             ),
         }
