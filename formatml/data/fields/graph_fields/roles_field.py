@@ -1,6 +1,6 @@
 from typing import Iterable, List, NamedTuple
 
-from torch import cat, long as torch_long, Tensor, tensor
+from torch import cat, device as torch_device, long as torch_long, Tensor, tensor
 
 from formatml.data.fields.graph_fields.graph_field import GraphField
 from formatml.data.vocabulary import Vocabulary
@@ -43,4 +43,9 @@ class RolesField(GraphField[RolesFieldOutput]):
         return RolesFieldOutput(
             input=cat([t.input for t in tensors], dim=0),
             offsets=cat(shifted_offsets, dim=0),
+        )
+
+    def to(self, tensor: RolesFieldOutput, device: torch_device) -> RolesFieldOutput:
+        return RolesFieldOutput(
+            input=tensor.input.to(device), offsets=tensor.offsets.to(device)
         )

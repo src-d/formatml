@@ -3,6 +3,8 @@ from pathlib import Path
 from pickle import dump as pickle_dump
 from typing import Any, Dict, List, Tuple
 
+from torch import device as torch_device
+
 from formatml.data.fields.field import Field
 from formatml.utils.helpers import get_generic_arguments
 
@@ -50,6 +52,12 @@ class Instance:
         """
         return {
             field_name: field.collate(tensor[field_name] for tensor in tensors)
+            for field_name, field in self.fields
+        }
+
+    def to(self, tensor: Dict[str, Any], device: torch_device) -> Dict[str, Any]:
+        return {
+            field_name: field.to(tensor[field_name], device)
             for field_name, field in self.fields
         }
 

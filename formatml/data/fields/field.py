@@ -1,5 +1,7 @@
 from typing import Generic, Iterable, TypeVar
 
+from torch import device as torch_device
+
 
 _TInputs = TypeVar("_TInputs")
 _TOutputs = TypeVar("_TOutputs")
@@ -34,4 +36,7 @@ class Field(Generic[_TInputs, _TOutputs]):
         :param tensors: Tensorized samples to collate.
         :return: Batched tensorized sample.
         """
+        raise NotImplementedError()
+
+    def to(self, tensor: _TOutputs, device: torch_device) -> _TOutputs:
         raise NotImplementedError()

@@ -1,6 +1,12 @@
 from typing import Iterable
 
-from torch import cat as torch_cat, long as torch_long, Tensor, tensor
+from torch import (
+    cat as torch_cat,
+    device as torch_device,
+    long as torch_long,
+    Tensor,
+    tensor,
+)
 
 from formatml.data.fields.graph_fields.graph_field import GraphField
 from formatml.data.vocabulary import Vocabulary
@@ -21,6 +27,9 @@ class LengthField(GraphField[Tensor]):
 
     def collate(self, tensors: Iterable[Tensor]) -> Tensor:
         return torch_cat(tensors=list(tensors), dim=0)
+
+    def to(self, tensor: Tensor, device: torch_device) -> Tensor:
+        return tensor.to(device)
 
     def _length(self, node: Node) -> int:
         if node.internal_type == self.formatting_internal_type:

@@ -3,9 +3,11 @@ from bz2 import open as bz2_open
 from logging import getLogger
 from pathlib import Path
 from pickle import load as pickle_load
-from typing import List
+from typing import List, Optional
 
 from coloredlogs import install as coloredlogs_install
+from torch import device as torch_device
+from torch.cuda import is_available as cuda_is_available
 from torch.nn import Linear
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
@@ -99,6 +101,9 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         nargs="+",
         default=["mrr", "cross_entropy"],
     )
+    parser.add_argument(
+        "--trainer-cuda", help="CUDA index of the device to use for training.", type=int
+    )
     parser.add_argument("--log-level", default="DEBUG", help="Logging verbosity.")
 
 
@@ -121,6 +126,7 @@ def train(
     trainer_eval_every: int,
     trainer_train_eval_split: float,
     trainer_metric_names: List[str],
+    trainer_cuda: Optional[int],
     log_level: str,
 ) -> None:
     """Run the training."""
@@ -130,6 +136,13 @@ def train(
     tensors_dir_path = Path(tensors_dir).expanduser().resolve()
     output_dir_path = Path(output_dir).expanduser().resolve()
 
+    if trainer_cuda is not None:
+        if not cuda_is_available():
+            raise RuntimeError("CUDA is not available on this system.")
+        device = torch_device("cuda:%d" % trainer_cuda)
+    else:
+        device = torch_device("cpu")
+
     with bz2_open(instance_file, "rb") as fh:
         instance = pickle_load(fh)
 
@@ -138,7 +151,7 @@ def train(
     graph_input_fields = instance.fields[2:]
     graph_input_dimensions = [48, 48, 32]
 
-    dataset = CodRepDataset(input_dir=tensors_dir_path, instance=instance)
+    dataset = CodRepDataset(input_dir=tensors_dir_path)
     logger.info(f"Dataset of size {len(dataset)}")
 
     feature_names = [name for name, _ in graph_input_fields]
@@ -168,6 +181,7 @@ def train(
         optimizer=optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma
     )
     trainer = Trainer(
+        instance=instance,
         epochs=trainer_epochs,
         batch_size=trainer_batch_size,
         eval_every=trainer_eval_every,
@@ -178,5 +192,6 @@ def train(
         model=model,
         optimizer=optimizer,
         scheduler=scheduler,
+        device=device,
     )
     trainer.train()
