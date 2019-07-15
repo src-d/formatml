@@ -9,6 +9,8 @@ before_cache:
 stages:
   - style
   - test
+  - name: deploy
+    if: tag =~ .*
 matrix:
   include:
     - stage: style
@@ -38,6 +40,13 @@ matrix:
         - coverage combine
       after_success:
         - codecov
+    - stage: deploy
+      script:
+        - test $(python3 setup.py --version) == $TRAVIS_TAG
+        - docker build -t srcd/formatml:$TRAVIS_TAG .
+        - docker tag srcd/formatml:$TRAVIS_TAG srcd/formatml:latest
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker push srcd/formatml
   fast_finish: true
 notifications:
   email: false
