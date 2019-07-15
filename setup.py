@@ -7,10 +7,11 @@ from setuptools import find_packages, setup
 
 try:
     import torch  # noqa: F401
+    import dgl  # noqa: F401
 except ImportError:
     print(
-        "PyTorch should be installed. "
-        "Please visit https://pytorch.org/ for instructions.",
+        "PyTorch and DGL should be installed. "
+        "Please visit https://pytorch.org/ and https://www.dgl.ai/ for instructions.",
         file=stderr,
     )
 
@@ -32,11 +33,13 @@ setup(
     entry_points={"console_scripts": ["formatml=formatml.__main__:main"]},
     install_requires=[
         "coloredlogs",
-        "dgl",
         "bblfsh <3.0",
         "asdf",
         "dulwich",
         "tf-nightly",
+        # Below are extra deps for TF
+        "Pillow",
+        "future",
     ],
     include_package_data=True,
     license="Apache-2.0",

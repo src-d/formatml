@@ -7,12 +7,14 @@ from pathlib import Path
 from pickle import dump as pickle_dump
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
+from torch import device as torch_device
 from torch.nn.utils.rnn import PackedSequence
 from torch.optim.optimizer import Optimizer
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import random_split
 from torch.utils.tensorboard import SummaryWriter
 
+from formatml.data.instance import Instance
 from formatml.datasets.dataset import Dataset
 from formatml.models.model import Model, ModelOutput
 from formatml.utils.torch_helpers import data_if_packed
@@ -69,6 +71,7 @@ class Trainer:
     def __init__(
         self,
         dataset: Dataset,
+        instance: Instance,
         model: Model,
         optimizer: Optimizer,
         scheduler: Any,
@@ -78,9 +81,11 @@ class Trainer:
         eval_every: int,
         train_eval_split: float,
         metric_names: List[str],
+        device: torch_device,
     ) -> None:
         self.dataset = dataset
-        self.model = model
+        self.instance = instance
+        self.model = model.to(device)
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.epochs = epochs
@@ -88,6 +93,7 @@ class Trainer:
         self.run_dir_path = run_dir_path
         self.eval_every = eval_every
         self.train_eval_split = train_eval_split
+        self.device = device
         self._checkpoints_dir = self.run_dir_path / "checkpoints"
         self._writers: Dict[DataType, SummaryWriter] = {}
         self._accumulated_metrics: Dict[
@@ -119,14 +125,14 @@ class Trainer:
             DataType.Train: DataLoader(
                 train_dataset,
                 shuffle=True,
-                collate_fn=self.dataset.collate,
+                collate_fn=self.instance.collate,
                 batch_size=self.batch_size,
                 num_workers=1,
             ),
             DataType.Eval: DataLoader(
                 eval_dataset,
                 shuffle=True,
-                collate_fn=self.dataset.collate,
+                collate_fn=self.instance.collate,
                 batch_size=self.batch_size,
                 num_workers=1,
             ),
@@ -141,6 +147,7 @@ class Trainer:
     def _train_epoch(self, epoch: int) -> None:
         self.model.train()
         for iteration, sample in enumerate(self._dataloaders[DataType.Train], start=1):
+            sample = self.instance.to(sample, self.device)
             forward = self.model.forward(sample)
             self._compute_metrics(
                 forward=forward,

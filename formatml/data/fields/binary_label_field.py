@@ -1,6 +1,6 @@
 from typing import Iterable, NamedTuple
 
-from torch import cat, long as torch_long, Tensor, tensor, zeros
+from torch import cat, device as torch_device, long as torch_long, Tensor, tensor, zeros
 
 from formatml.data.fields.field import Field
 from formatml.data.types.codrep_label import CodRepLabel
@@ -36,4 +36,13 @@ class BinaryLabelsField(Field[CodRepLabel, BinaryLabelsFieldOutput]):
             indexes=cat(offset_indexes),
             labels=cat([t.labels for t in tensors_list]),
             n_nodes=sum(t.n_nodes for t in tensors_list),
+        )
+
+    def to(
+        self, tensor: BinaryLabelsFieldOutput, device: torch_device
+    ) -> BinaryLabelsFieldOutput:
+        return BinaryLabelsFieldOutput(
+            indexes=tensor.indexes.to(device),
+            labels=tensor.labels.to(device),
+            n_nodes=tensor.n_nodes,
         )

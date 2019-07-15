@@ -1,6 +1,6 @@
 from typing import Iterable, List, NamedTuple, Tuple
 
-from torch import long as torch_long, Tensor, tensor
+from torch import device as torch_device, long as torch_long, Tensor, tensor
 from torch.nn.utils.rnn import pack_sequence, PackedSequence
 
 from formatml.data.fields.graph_fields.graph_field import GraphField
@@ -77,4 +77,12 @@ class LabelField(GraphField[LabelFieldOutput]):
             decoder_inputs=pack_sequence(decoder_inputs_tensor),
             labels=pack_sequence(labels_tensor),
             n_nodes=offset,
+        )
+
+    def to(self, tensor: LabelFieldOutput, device: torch_device) -> LabelFieldOutput:
+        return LabelFieldOutput(
+            indexes=tensor.indexes.to(device),
+            decoder_inputs=tensor.decoder_inputs.to(device),
+            labels=tensor.labels.to(device),
+            n_nodes=tensor.n_nodes,
         )

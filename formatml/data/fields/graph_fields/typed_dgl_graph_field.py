@@ -2,7 +2,7 @@ from itertools import islice
 from typing import Iterable, List, NamedTuple
 
 from dgl import batch as dgl_batch, DGLGraph
-from torch import cat, long as torch_long, Tensor, tensor
+from torch import cat, device as torch_device, long as torch_long, Tensor, tensor
 
 from formatml.data.fields.graph_fields.graph_field import GraphField
 from formatml.data.vocabulary import Vocabulary
@@ -74,4 +74,13 @@ class TypedDGLGraphField(GraphField[TypedDGLGraphFieldOutput]):
         return TypedDGLGraphFieldOutput(
             graph=dgl_batch([tensor.graph for tensor in tensors]),
             edges_by_type=[cat(offset_edges_by_type[i], dim=0) for i in n_types],
+        )
+
+    def to(
+        self, tensor: TypedDGLGraphFieldOutput, device: torch_device
+    ) -> TypedDGLGraphFieldOutput:
+        tensor.graph.to(device)
+        return TypedDGLGraphFieldOutput(
+            graph=tensor.graph,
+            edges_by_type=[t.to(device) for t in tensor.edges_by_type],
         )
