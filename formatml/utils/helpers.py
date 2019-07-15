@@ -1,12 +1,29 @@
 from datetime import datetime
 from itertools import chain
+from logging import Filter, getLogger, LogRecord
 from pathlib import Path
 from sys import exit, stderr
 from typing import Any, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 
+from coloredlogs import install as coloredlogs_install
 from dulwich.errors import NotGitRepository
 from dulwich.porcelain import status
 from dulwich.repo import Repo
+
+
+class ShortNameFilter(Filter):
+    def filter(self, record: LogRecord) -> int:
+        record.shortname = record.name.split(".")[-1]  # type: ignore
+        return 1
+
+
+def setup_logging(log_level: str) -> None:
+    coloredlogs_install(
+        level=log_level,
+        fmt="%(asctime)s %(shortname)10s %(message)s",
+        datefmt="%H:%M:%S",
+    )
+    getLogger().handlers[0].addFilter(ShortNameFilter())
 
 
 def get_sha_and_dirtiness(prompt_on_dirty: bool = True) -> Optional[Tuple[str, bool]]:

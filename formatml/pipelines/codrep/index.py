@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import List
 
 from asdf import open as asdf_open
-from coloredlogs import install as coloredlogs_install
 
 from formatml.data.fields.binary_label_field import BinaryLabelsField
 from formatml.data.fields.graph_fields.internal_type_field import InternalTypeField
@@ -15,6 +14,7 @@ from formatml.data.instance import Instance
 from formatml.data.types.codrep_label import CodRepLabel
 from formatml.parsing.parser import Nodes
 from formatml.pipelines.pipeline import register_step
+from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
@@ -52,7 +52,7 @@ def index(
     log_level: str,
 ) -> None:
     """Index UASTs with respect to some fields."""
-    coloredlogs_install(level=log_level, fmt="%(name)27s %(levelname)8s %(message)s")
+    setup_logging(log_level)
     logger = getLogger(__name__)
 
     input_dir_path = Path(input_dir).expanduser().resolve()
