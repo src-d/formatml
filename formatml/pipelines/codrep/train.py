@@ -5,7 +5,6 @@ from pathlib import Path
 from pickle import load as pickle_load
 from typing import List, Optional
 
-from coloredlogs import install as coloredlogs_install
 from torch.nn import Linear
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
@@ -16,6 +15,7 @@ from formatml.modules.graph_encoders.ggnn import GGNN
 from formatml.modules.misc.graph_embedding import GraphEmbedding
 from formatml.pipelines.pipeline import register_step
 from formatml.training.trainer import Trainer
+from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
@@ -128,7 +128,7 @@ def train(
     log_level: str,
 ) -> None:
     """Run the training."""
-    coloredlogs_install(level=log_level, fmt="%(name)27s %(levelname)8s %(message)s")
+    setup_logging(log_level)
     logger = getLogger(__name__)
 
     tensors_dir_path = Path(tensors_dir).expanduser().resolve()

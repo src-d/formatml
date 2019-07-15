@@ -4,12 +4,12 @@ from pathlib import Path
 from time import time
 
 from asdf import AsdfFile
-from coloredlogs import install as coloredlogs_install
 
 from formatml.data.types.codrep_label import CodRepLabel
 from formatml.parsing.java_parser import JavaParser
 from formatml.parsing.parser import ParsingException
 from formatml.pipelines.pipeline import register_step
+from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
@@ -29,7 +29,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
 )
 def codrep_train(*, input_dir: str, output_dir: str, log_level: str) -> None:
     """Parse a CodRep 2019 dataset into UASTs."""
-    coloredlogs_install(level=log_level, fmt="%(name)27s %(levelname)8s %(message)s")
+    setup_logging(log_level)
     logger = getLogger(__name__)
     input_dir_path = Path(input_dir).expanduser().resolve()
     output_dir_path = Path(output_dir).expanduser().resolve()

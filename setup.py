@@ -31,16 +31,7 @@ setup(
     url="https://github.com/src-d/formatml",
     packages=find_packages(exclude=["tests"]),
     entry_points={"console_scripts": ["formatml=formatml.__main__:main"]},
-    install_requires=[
-        "coloredlogs",
-        "bblfsh <3.0",
-        "asdf",
-        "dulwich",
-        "tf-nightly",
-        # Below are extra deps for TF
-        "Pillow",
-        "future",
-    ],
+    install_requires=["coloredlogs", "bblfsh <3.0", "asdf", "dulwich", "tensorboard"],
     include_package_data=True,
     license="Apache-2.0",
     classifiers=[
