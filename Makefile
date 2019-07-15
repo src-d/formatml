@@ -4,13 +4,15 @@ check:
 	flake8 --count
 	pylint formatml setup.py
 
-bblfsh-start:
-	! docker ps | grep formatml_bblfshd # bblfsh server has been run already.
-	docker run -d --rm --name formatml_bblfshd --privileged -p 9999\:9432 \
-		bblfsh/bblfshd\:v2.12.0 --log-level DEBUG
-	docker exec formatml_bblfshd bblfshctl driver install \
-javascript docker://bblfsh/javascript-driver\:v2.7.3
-	docker exec formatml_bblfshd bblfshctl driver install \
-java docker://bblfsh/java-driver\:v2.7.2
+bblfshd:
+	docker start formatml_bblfshd > /dev/null 2>&1 \
+		|| docker run \
+			--detach \
+			--rm \
+			--name formatml_bblfshd \
+			--privileged \
+			--publish 9432:9432 \
+			bblfsh/bblfshd:v2.14.0-drivers \
+			--log-level DEBUG
 
-.PHONY: check bblfsh-start
+.PHONY: check bblfshd

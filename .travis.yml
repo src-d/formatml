@@ -20,7 +20,7 @@ matrix:
     - stage: test
       python: 3.6
       install:
-        - travis_retry make bblfsh-start
+        - travis_retry make bblfshd
         - pip install --upgrade pip cython codecov
         - pip install https://download.pytorch.org/whl/cpu/torch-1.1.0-cp36-cp36m-linux_x86_64.whl
         - pip install .
@@ -29,7 +29,7 @@ matrix:
     - stage: test
       python: 3.7
       install:
-        - travis_retry make bblfsh-start
+        - travis_retry make bblfshd
         - pip install --upgrade pip cython codecov
         - pip install https://download.pytorch.org/whl/cpu/torch-1.1.0-cp37-cp37m-linux_x86_64.whl
         - pip install .
