@@ -25,7 +25,7 @@ bblfshd:
 			bblfsh/bblfshd:v2.14.0-drivers \
 			--log-level DEBUG
 
-download: setup
+download:
 	mkdir -p $(CODREP_STEPS_DIR) $(CODREP_DATA_DIR)
 	dvc import-url \
 		--file $(CODREP_STEPS_DIR)/download.dvc \
