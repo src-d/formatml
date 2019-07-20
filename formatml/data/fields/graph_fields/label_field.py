@@ -5,7 +5,7 @@ from torch.nn.utils.rnn import pack_sequence, PackedSequence
 
 from formatml.data.fields.graph_fields.graph_field import GraphField
 from formatml.data.vocabulary import Vocabulary
-from formatml.parsing.parser import Nodes
+from formatml.parsing.parser import FORMATTING_INTERNAL_TYPE, Nodes
 from formatml.utils.torch_helpers import unpack_packed_sequence
 
 
@@ -19,16 +19,15 @@ class LabelFieldOutput(NamedTuple):
 
 
 class LabelField(GraphField[LabelFieldOutput]):
-    def __init__(self, *, formatting_internal_type: str = "Formatting") -> None:
+    def __init__(self) -> None:
         self.vocabulary = Vocabulary(unknown="<UNK>")
         self.vocabulary.add_item("<PAD>")
         self.vocabulary.add_item("<GO>")
         self.vocabulary.add_item("<STOP>")
-        self.formatting_internal_type = formatting_internal_type
 
     def index(self, sample: Nodes) -> None:
         for node in sample.nodes:
-            if node.internal_type == self.formatting_internal_type:
+            if node.internal_type == FORMATTING_INTERNAL_TYPE:
                 self.vocabulary.add_items(
                     list(node.token if node.token is not None else "")
                 )
@@ -36,7 +35,7 @@ class LabelField(GraphField[LabelFieldOutput]):
     def tensorize(self, sample: Nodes) -> LabelFieldOutput:
         node_sequences = []
         for i, node in enumerate(sample.nodes):
-            if node.internal_type == self.formatting_internal_type:
+            if node.internal_type == FORMATTING_INTERNAL_TYPE:
                 mapped = self.vocabulary.get_indexes(
                     list(node.token if node.token else "")
                 )

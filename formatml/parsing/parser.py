@@ -10,6 +10,10 @@ from bblfsh import BblfshClient, Node as BblfshNode, role_name
 from numpy import array, int32, uint32, unicode_
 
 
+FORMATTING_INTERNAL_TYPE = "Formatting"
+FORMATTING_ROLE = "FORMATTING"
+
+
 class ParsingException(Exception):
     """Exception thrown in case of parsing failure."""
 
@@ -226,7 +230,6 @@ class Parser:
     def __init__(
         self,
         bblfshd_endpoint: str = environ.get("BBLFSHD_ENDPOINT", "0.0.0.0:9432"),
-        formatting_internal_type: str = "Formatting",
         split_formatting: bool = False,
     ) -> None:
         """Construct a parser."""
@@ -243,12 +246,7 @@ class Parser:
                     "used directly."
                 )
         self._bblfsh_client = BblfshClient(bblfshd_endpoint)
-        self._formatting_internal_type = formatting_internal_type
         self._split_formatting = split_formatting
-
-    @property
-    def formatting_internal_type(self) -> str:
-        return self._formatting_internal_type
 
     @property
     def split_formatting(self) -> bool:
@@ -348,8 +346,8 @@ class Parser:
                             end=match.end() + pos,
                             token=token,
                             parent=None,
-                            internal_type=self._formatting_internal_type,
-                            roles=["FORMATTING"],
+                            internal_type=FORMATTING_INTERNAL_TYPE,
+                            roles=[FORMATTING_ROLE],
                         )
                     )
                     sumlen += len(token)
@@ -394,15 +392,15 @@ class Parser:
     def _augment_tokens(self, tokens: List[Node]) -> List[Node]:
         augmented_tokens = []
 
-        if not tokens or tokens[0].internal_type != self._formatting_internal_type:
+        if not tokens or tokens[0].internal_type != FORMATTING_INTERNAL_TYPE:
             augmented_tokens.append(
                 Node(
                     start=0,
                     end=0,
                     token="",
                     parent=None,
-                    internal_type=self._formatting_internal_type,
-                    roles=["FORMATTING"],
+                    internal_type=FORMATTING_INTERNAL_TYPE,
+                    roles=[FORMATTING_ROLE],
                 )
             )
         if tokens:
@@ -413,8 +411,8 @@ class Parser:
         ):
             assert previous_token.end == next_token.start
             if (
-                previous_token.internal_type != self._formatting_internal_type
-                and next_token.internal_type != self._formatting_internal_type
+                previous_token.internal_type != FORMATTING_INTERNAL_TYPE
+                and next_token.internal_type != FORMATTING_INTERNAL_TYPE
             ):
                 augmented_tokens.append(
                     Node(
@@ -422,21 +420,21 @@ class Parser:
                         end=previous_token.end,
                         token="",
                         parent=None,
-                        internal_type=self._formatting_internal_type,
-                        roles=["FORMATTING"],
+                        internal_type=FORMATTING_INTERNAL_TYPE,
+                        roles=[FORMATTING_ROLE],
                     )
                 )
             augmented_tokens.append(next_token)
 
-        if tokens and tokens[-1].internal_type != self._formatting_internal_type:
+        if tokens and tokens[-1].internal_type != FORMATTING_INTERNAL_TYPE:
             augmented_tokens.append(
                 Node(
                     start=tokens[-1].end,
                     end=tokens[-1].end,
                     token="",
                     parent=None,
-                    internal_type=self._formatting_internal_type,
-                    roles=["FORMATTING"],
+                    internal_type=FORMATTING_INTERNAL_TYPE,
+                    roles=[FORMATTING_ROLE],
                 )
             )
         return augmented_tokens
@@ -482,7 +480,7 @@ class Parser:
         """
         new_nodes = []
         for node in nodes:
-            if node.internal_type == self._formatting_internal_type and node.token:
+            if node.internal_type == FORMATTING_INTERNAL_TYPE and node.token:
                 for i, char in enumerate(node.token):
                     new_nodes.append(
                         Node(

@@ -33,7 +33,6 @@ class RepositoryDataset(Dataset):
         instance: Instance,
         parser: Parser,
         bblfsh_endpoint: str = "0.0.0.0:9999",
-        formatting_internal_type: str = "Formatting",
         n_workers: int = cpu_count(),
         pickle_protocol: int = 4,
     ) -> None:
@@ -47,7 +46,6 @@ class RepositoryDataset(Dataset):
         self.version = version
         # Parsing parameters.
         self.bblfsh_endpoint = bblfsh_endpoint
-        self.formatting_internal_type = formatting_internal_type
         # Tensorizing parameters.
         self.instance = instance
         self.parser = parser
