@@ -27,7 +27,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
 @register_step(
     pipeline_name="codrep", step_name="parse", parser_definer=add_arguments_to_parser
 )
-def codrep_train(*, input_dir: str, output_dir: str, log_level: str) -> None:
+def parse(*, input_dir: str, output_dir: str, log_level: str) -> None:
     """Parse a CodRep 2019 dataset into UASTs."""
     setup_logging(log_level)
     logger = getLogger(__name__)
