@@ -4,6 +4,7 @@ CODREP_COMMAND ?= ~/.virtualenvs/formatml/bin/python -m formatml codrep
 CODREP_DIR ?= .
 CODREP_STEPS_DIR ?= $(CODREP_DIR)/steps
 CODREP_DATA_DIR ?= $(CODREP_DIR)/data
+CODREP_CONFIGS_DIR ?= $(CODREP_DIR)/config
 CODREP_ARCHIVE_URL ?= https://github.com/KTH/codrep-2019/archive/master.zip
 CODREP_ARCHIVE ?= $(CODREP_DATA_DIR)/master.zip
 CODREP_RAW_DIR ?= $(CODREP_DATA_DIR)/raw
@@ -26,7 +27,7 @@ bblfshd:
 			--log-level DEBUG
 
 download:
-	mkdir -p $(CODREP_STEPS_DIR) $(CODREP_DATA_DIR)
+	mkdir -p $(CODREP_STEPS_DIR) $(CODREP_DATA_DIR) $(CODREP_CONFIGS_DIR)
 	dvc import-url \
 		--file $(CODREP_STEPS_DIR)/download.dvc \
 		$(CODREP_ARCHIVE_URL) \
@@ -49,8 +50,9 @@ parse: bblfshd unzip
 		--deps $(CODREP_RAW_DIR) \
 		--outs $(CODREP_UASTS_DIR) \
 		$(CODREP_COMMAND) parse \
-			$(CODREP_RAW_DIR) \
-			$(CODREP_UASTS_DIR) 
+			--raw-dir $(CODREP_RAW_DIR) \
+			--uasts-dir $(CODREP_UASTS_DIR) \
+			--configs-dir $(CODREP_CONFIGS_DIR)
 
 index: parse
 	dvc run \
@@ -59,8 +61,9 @@ index: parse
 		--deps $(CODREP_UASTS_DIR) \
 		--outs $(CODREP_INSTANCE_ARCHIVE) \
 		$(CODREP_COMMAND) index \
-			$(CODREP_UASTS_DIR) \
-			$(CODREP_INSTANCE_ARCHIVE) \
+			--uasts-dir $(CODREP_UASTS_DIR) \
+			--instance-file $(CODREP_INSTANCE_ARCHIVE) \
+			--configs-dir $(CODREP_CONFIGS_DIR) \
 			$(CODREP_INDEX_ARGS)
 
 tensorize: index
@@ -71,9 +74,10 @@ tensorize: index
 		--deps $(CODREP_INSTANCE_ARCHIVE) \
 		--outs $(CODREP_TENSORS_DIR) \
 		$(CODREP_COMMAND) tensorize \
-			$(CODREP_UASTS_DIR) \
-			$(CODREP_INSTANCE_ARCHIVE) \
-			$(CODREP_TENSORS_DIR) \
+			--uasts-dir $(CODREP_UASTS_DIR) \
+			--instance-file $(CODREP_INSTANCE_ARCHIVE) \
+			--tensors-dir $(CODREP_TENSORS_DIR) \
+			--configs-dir $(CODREP_CONFIGS_DIR) \
 			$(CODREP_TENSORIZE_ARGS)
 
 train: tensorize
@@ -84,9 +88,10 @@ train: tensorize
 		--deps $(CODREP_TENSORS_DIR) \
 		--outs $(CODREP_TRAIN_DIR) \
 		$(CODREP_COMMAND) train \
-			$(CODREP_INSTANCE_ARCHIVE) \
-			$(CODREP_TENSORS_DIR) \
-			$(CODREP_TRAIN_DIR) \
+			--instance-file $(CODREP_INSTANCE_ARCHIVE) \
+			--tensors-dir $(CODREP_TENSORS_DIR) \
+			--train-dir $(CODREP_TRAIN_DIR) \
+			--configs-dir $(CODREP_CONFIGS_DIR) \
 			$(CODREP_TRAIN_ARGS)
 
 .PHONY: bblfshd download unzip parse index tensorize train

@@ -9,7 +9,7 @@ from pickle import dump as pickle_dump
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from dgl import unbatch
-from torch import device as torch_device
+from torch import device as torch_device, no_grad
 from torch.cuda import is_available as cuda_is_available
 from torch.optim.optimizer import Optimizer
 from torch.utils.data.dataloader import DataLoader
@@ -198,18 +198,21 @@ class Trainer:
 
     def _eval_epoch(self, epoch: int) -> None:
         self.model.eval()
-        for iteration, sample in enumerate(self._dataloaders[DataType.Eval], start=1):
-            sample = self.instance.to(sample, self.device)
-            forward = self.model.forward(sample)
-            self._compute_metrics(
-                forward=forward,
-                sample=sample,
-                data_type=DataType.Eval,
-                accumulate=True,
-                send_event=False,
-                epoch=epoch,
-                iteration=iteration,
-            )
+        with no_grad():
+            for iteration, sample in enumerate(
+                self._dataloaders[DataType.Eval], start=1
+            ):
+                sample = self.instance.to(sample, self.device)
+                forward = self.model.forward(sample)
+                self._compute_metrics(
+                    forward=forward,
+                    sample=sample,
+                    data_type=DataType.Eval,
+                    accumulate=True,
+                    send_event=False,
+                    epoch=epoch,
+                    iteration=iteration,
+                )
 
         self._log_accumulated_metrics(
             data_type=DataType.Eval, send_event=True, epoch=epoch, iteration=iteration
@@ -311,6 +314,7 @@ class Trainer:
         del self._accumulated_metrics[data_type]
 
     def __del__(self) -> None:
-        for writer in self._writers.values():
-            if writer:
-                writer.close()
+        if hasattr(self, "_writers"):
+            for writer in self._writers.values():
+                if writer:
+                    writer.close()
