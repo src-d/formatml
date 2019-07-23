@@ -53,15 +53,14 @@ def _perplexity(forward: ModelOutput, sample: Dict[str, Any]) -> float:
 
 @register_metric(name="mrr")
 def _mrr(forward: ModelOutput, sample: Dict[str, Any]) -> float:
-    label_field = sample["label"]
-    labels = label_field.labels
+    labels = sample["label"]
     ground_truth = data_if_packed(labels).argmax(dim=0)
     batched_graph = sample["typed_dgl_graph"].graph
     graphs = unbatch(batched_graph)
     start = 0
     total_number_of_nodes = 0
     bounds = []
-    numpy_indexes = label_field.indexes.cpu().numpy()
+    numpy_indexes = sample["indexes"].indexes.cpu().numpy()
     for graph in graphs:
         total_number_of_nodes += graph.number_of_nodes()
         end = bisect_right(numpy_indexes, total_number_of_nodes - 1)

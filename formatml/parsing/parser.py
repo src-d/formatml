@@ -67,6 +67,7 @@ class Nodes(NamedTuple):
     nodes: List[Node]
     node_index: Dict[int, int]
     token_indexes: List[int]
+    formatting_indexes: List[int]
 
     def to_tree(self, file_content: str) -> Dict[str, Any]:
         """
@@ -84,23 +85,24 @@ class Nodes(NamedTuple):
             if node.internal_type == "WhiteSpace":
                 assert node.token.isspace()
 
-        return {
-            "file_content": array([file_content], dtype=unicode_),
-            "internal_types": array(
+        return dict(
+            file_content=array([file_content], dtype=unicode_),
+            internal_types=array(
                 [node.internal_type for node in self.nodes], dtype=unicode_
             ),
-            "roles_list": array(
+            roles_list=array(
                 [role for node in self.nodes for role in node.roles], dtype=unicode_
             ),
-            "roles_offsets": array(roles_offsets, dtype=uint32),
-            "parents": array(
+            roles_offsets=array(roles_offsets, dtype=uint32),
+            parents=array(
                 [self.node_index.get(id(node.parent), -1) for node in self.nodes],
                 dtype=int32,
             ),
-            "starts": array([node.start for node in self.nodes], dtype=uint32),
-            "ends": array([node.end for node in self.nodes], dtype=uint32),
-            "token_node_indexes": array(self.token_indexes, dtype=uint32),
-        }
+            starts=array([node.start for node in self.nodes], dtype=uint32),
+            ends=array([node.end for node in self.nodes], dtype=uint32),
+            token_indexes=array(self.token_indexes, dtype=uint32),
+            formatting_indexes=array(self.formatting_indexes, dtype=uint32),
+        )
 
     @staticmethod
     def from_token_nodes(token_nodes: List[Node]) -> "Nodes":
@@ -117,8 +119,16 @@ class Nodes(NamedTuple):
         token_node_indexes = [
             node_to_index[id(token_node)] for token_node in token_nodes
         ]
+        formatting_indexes = [
+            node_to_index[id(token_node)]
+            for token_node in token_nodes
+            if token_node.internal_type == FORMATTING_INTERNAL_TYPE
+        ]
         return Nodes(
-            nodes=all_nodes, node_index=node_to_index, token_indexes=token_node_indexes
+            nodes=all_nodes,
+            node_index=node_to_index,
+            token_indexes=token_node_indexes,
+            formatting_indexes=formatting_indexes,
         )
 
     @staticmethod
@@ -138,7 +148,7 @@ class Nodes(NamedTuple):
         if tree["roles_offsets"].shape[0]:
             roles.append(tree["roles_list"][previous_roles_offset:])
         all_nodes = []
-        token_node_indexes = frozenset(tree["token_node_indexes"])
+        token_indexes_set = frozenset(tree["token_indexes"])
         for i, (start, end, internal_type, roles) in enumerate(
             zip(tree["starts"], tree["ends"], tree["internal_types"], roles)
         ):
@@ -149,7 +159,7 @@ class Nodes(NamedTuple):
                     roles=roles,
                     parent=None,
                     internal_type=internal_type,
-                    token=file_content[start:end] if i in token_node_indexes else "",
+                    token=file_content[start:end] if i in token_indexes_set else "",
                 )
             )
         for node, parent_index in zip(all_nodes, map(int, tree["parents"])):
@@ -159,7 +169,10 @@ class Nodes(NamedTuple):
                 assert node.token.isspace()
         node_index = {id(node): i for i, node in enumerate(all_nodes)}
         return Nodes(
-            all_nodes, node_index, [i for i in map(int, tree["token_node_indexes"])]
+            all_nodes,
+            node_index,
+            token_indexes=[int(i) for i in tree["token_indexes"]],
+            formatting_indexes=[int(i) for i in tree["formatting_indexes"]],
         )
 
 

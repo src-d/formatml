@@ -1,12 +1,12 @@
-md5: 2c066ea06e727fd66dc7fe528fb1a2ce
+md5: 64472fd650f6759f07a4b7a83c8f15b2
 cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep index --uasts-dir
   ./data/uasts --instance-file ./data/instance.pickle.bz2 --configs-dir ./config
 wdir: ..
 deps:
-- md5: 725b3b8211379b747a71e4edbc12b370.dir
+- md5: ed6154770e0e6675c8df8a4fa3fe1840.dir
   path: data/uasts
 outs:
-- md5: 34a3bdf634a1e057ecdcd52099161f6e
+- md5: 27e9c6f91ed805ac522190fc91d65581
   path: data/instance.pickle.bz2
   cache: true
   metric: false
