@@ -13,23 +13,23 @@ from formatml.datasets.codrep_dataset import CodRepDataset
 from formatml.models.gnn_ff import GNNFFModel
 from formatml.modules.graph_encoders.ggnn import GGNN
 from formatml.modules.misc.graph_embedding import GraphEmbedding
+from formatml.pipelines.codrep.cli_helper import CLIHelper
 from formatml.pipelines.pipeline import register_step
 from formatml.training.trainer import Trainer
+from formatml.utils.config import Config
 from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
+    cli_helper = CLIHelper(parser)
+    cli_helper.add_instance_file()
+    cli_helper.add_tensors_dir()
     parser.add_argument(
-        "instance_file", metavar="instance-file", help="Path to the pickled instance."
-    )
-    parser.add_argument(
-        "tensors_dir", metavar="tensors-dir", help="Path the pickled tensors."
-    )
-    parser.add_argument(
-        "output_dir",
-        metavar="output-dir",
+        "--train-dir",
+        required=True,
         help="Directory where the run artifacts will be output.",
     )
+    cli_helper.add_configs_dir()
     parser.add_argument(
         "--model-encoder-iterations",
         help="Number of message passing iterations to apply (defaults to %(default)s).",
@@ -102,7 +102,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--trainer-cuda", help="CUDA index of the device to use for training.", type=int
     )
-    parser.add_argument("--log-level", default="DEBUG", help="Logging verbosity.")
+    cli_helper.add_log_level()
 
 
 @register_step(
@@ -112,7 +112,8 @@ def train(
     *,
     instance_file: str,
     tensors_dir: str,
-    output_dir: str,
+    train_dir: str,
+    configs_dir: str,
     model_encoder_iterations: int,
     model_encoder_output_dim: int,
     model_encoder_message_dim: int,
@@ -128,11 +129,14 @@ def train(
     log_level: str,
 ) -> None:
     """Run the training."""
+    Config.from_arguments(
+        locals(), ["instance_file", "tensors_dir", "train_dir"], "configs_dir"
+    ).save(Path(configs_dir) / "train.json")
     setup_logging(log_level)
     logger = getLogger(__name__)
 
     tensors_dir_path = Path(tensors_dir).expanduser().resolve()
-    output_dir_path = Path(output_dir).expanduser().resolve()
+    train_dir_path = Path(train_dir).expanduser().resolve()
 
     with bz2_open(instance_file, "rb") as fh:
         instance = pickle_load(fh)
@@ -178,7 +182,7 @@ def train(
         eval_every=trainer_eval_every,
         train_eval_split=trainer_train_eval_split,
         metric_names=trainer_metric_names,
-        run_dir_path=output_dir_path,
+        run_dir_path=train_dir_path,
         dataset=dataset,
         model=model,
         optimizer=optimizer,

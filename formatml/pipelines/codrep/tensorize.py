@@ -12,18 +12,18 @@ from asdf import open as asdf_open
 from formatml.data.instance import Instance
 from formatml.data.types.codrep_label import CodRepLabel
 from formatml.parsing.parser import Nodes
+from formatml.pipelines.codrep.cli_helper import CLIHelper
 from formatml.pipelines.pipeline import register_step
+from formatml.utils.config import Config
 from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
-    parser.add_argument("uasts_dir", metavar="uasts-dir", help="Path to the UASTs.")
-    parser.add_argument(
-        "instance_file", metavar="instance-file", help="Path to the pickled instance."
-    )
-    parser.add_argument(
-        "output_dir", metavar="output-dir", help="Where to output the pickled tensors."
-    )
+    cli_helper = CLIHelper(parser)
+    cli_helper.add_uasts_dir()
+    cli_helper.add_instance_file()
+    cli_helper.add_tensors_dir()
+    cli_helper.add_configs_dir()
     parser.add_argument(
         "--n-workers",
         help="Number of workers to use to tensorize the UASTs "
@@ -35,7 +35,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         help="Pickle protocol to use (defaults to %(default)s).",
         default=4,
     )
-    parser.add_argument("--log-level", default="DEBUG", help="Logging verbosity.")
+    cli_helper.add_log_level()
 
 
 @register_step(
@@ -47,17 +47,21 @@ def tensorize(
     *,
     uasts_dir: str,
     instance_file: str,
-    output_dir: str,
+    tensors_dir: str,
+    configs_dir: str,
     n_workers: int,
     pickle_protocol: int,
     log_level: str,
 ) -> None:
     """Tensorize the UASTs."""
+    Config.from_arguments(
+        locals(), ["uasts_dir", "instance_file", "tensors_dir"], "configs_dir"
+    ).save(Path(configs_dir) / "tensorize.json")
     setup_logging(log_level)
     logger = getLogger(__name__)
 
     uasts_dir_path = Path(uasts_dir).expanduser().resolve()
-    output_dir_path = Path(output_dir).expanduser().resolve()
+    tensors_dir_path = Path(tensors_dir).expanduser().resolve()
 
     with bz2_open(instance_file, "rb") as fh:
         instance = pickle_load(fh)
@@ -67,7 +71,7 @@ def tensorize(
         instance=instance,
         logger=logger,
         uasts_dir_path=uasts_dir_path,
-        output_dir_path=output_dir_path,
+        output_dir_path=tensors_dir_path,
         pickle_protocol=pickle_protocol,
     )
 
