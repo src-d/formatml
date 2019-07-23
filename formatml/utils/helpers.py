@@ -1,6 +1,6 @@
 from datetime import datetime
 from itertools import chain
-from logging import Filter, getLogger, LogRecord
+from logging import Filter, getLogger, Logger, LogRecord
 from pathlib import Path
 from sys import exit, stderr
 from typing import Any, Iterable, List, Optional, Tuple, Type, TypeVar, Union
@@ -17,13 +17,14 @@ class ShortNameFilter(Filter):
         return 1
 
 
-def setup_logging(log_level: str) -> None:
+def setup_logging(name: str, log_level: str) -> Logger:
     coloredlogs_install(
         level=log_level,
         fmt="%(asctime)s %(shortname)10s %(message)s",
         datefmt="%H:%M:%S",
     )
     getLogger().handlers[0].addFilter(ShortNameFilter())
+    return getLogger(name)
 
 
 def get_sha_and_dirtiness(prompt_on_dirty: bool = True) -> Optional[Tuple[str, bool]]:

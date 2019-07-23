@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from bz2 import open as bz2_open
 from functools import partial
-from logging import getLogger, Logger
+from logging import Logger
 from multiprocessing import cpu_count
 from multiprocessing.pool import Pool
 from pathlib import Path
@@ -57,8 +57,7 @@ def tensorize(
     Config.from_arguments(
         locals(), ["uasts_dir", "instance_file", "tensors_dir"], "configs_dir"
     ).save(Path(configs_dir) / "tensorize.json")
-    setup_logging(log_level)
-    logger = getLogger(__name__)
+    logger = setup_logging(__name__, log_level)
 
     uasts_dir_path = Path(uasts_dir).expanduser().resolve()
     tensors_dir_path = Path(tensors_dir).expanduser().resolve()
