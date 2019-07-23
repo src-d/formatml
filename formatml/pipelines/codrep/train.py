@@ -104,9 +104,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
     cli_helper.add_log_level()
 
 
-@register_step(
-    pipeline_name="codrep", step_name="train", parser_definer=add_arguments_to_parser
-)
+@register_step(pipeline_name="codrep", parser_definer=add_arguments_to_parser)
 def train(
     *,
     instance_file: str,
