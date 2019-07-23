@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from logging import getLogger
 from pathlib import Path
 from time import time
 
@@ -32,8 +31,7 @@ def parse(*, raw_dir: str, uasts_dir: str, configs_dir: str, log_level: str) -> 
     Config.from_arguments(locals(), ["raw_dir", "uasts_dir"], "configs_dir").save(
         Path(configs_dir) / "parse.json"
     )
-    setup_logging(log_level)
-    logger = getLogger(__name__)
+    logger = setup_logging(__name__, log_level)
     raw_dir_path = Path(raw_dir).expanduser().resolve()
     uasts_dir_path = Path(uasts_dir).expanduser().resolve()
     uasts_dir_path.mkdir(parents=True, exist_ok=True)

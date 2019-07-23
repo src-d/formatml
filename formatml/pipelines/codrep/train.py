@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
 from bz2 import open as bz2_open
-from logging import getLogger
 from pathlib import Path
 from pickle import load as pickle_load
 from typing import List, Optional
@@ -132,8 +131,7 @@ def train(
     Config.from_arguments(
         locals(), ["instance_file", "tensors_dir", "train_dir"], "configs_dir"
     ).save(Path(configs_dir) / "train.json")
-    setup_logging(log_level)
-    logger = getLogger(__name__)
+    logger = setup_logging(__name__, log_level)
 
     tensors_dir_path = Path(tensors_dir).expanduser().resolve()
     train_dir_path = Path(train_dir).expanduser().resolve()

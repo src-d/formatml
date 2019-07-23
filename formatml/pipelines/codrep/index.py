@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from logging import getLogger
 from pathlib import Path
 from typing import List
 
@@ -56,8 +55,7 @@ def index(
     Config.from_arguments(locals(), ["uasts_dir", "instance_file"], "configs_dir").save(
         Path(configs_dir) / "index.json"
     )
-    setup_logging(log_level)
-    logger = getLogger(__name__)
+    logger = setup_logging(__name__, log_level)
 
     uasts_dir_path = Path(uasts_dir).expanduser().resolve()
     instance_file_path = Path(instance_file).expanduser().resolve()
