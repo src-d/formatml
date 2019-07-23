@@ -1,4 +1,4 @@
-md5: 4fcd0fdc089f4ff002ef931fb5b5a866
+md5: f360eaba08b0a957e7c04008db72b72a
 cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep parse --raw-dir
   ./data/raw --uasts-dir ./data/uasts --configs-dir ./config
 wdir: ..
@@ -6,7 +6,7 @@ deps:
 - md5: d36fd902a676b091eaf4cd4d6774abca.dir
   path: data/raw
 outs:
-- md5: 725b3b8211379b747a71e4edbc12b370.dir
+- md5: ed6154770e0e6675c8df8a4fa3fe1840.dir
   path: data/uasts
   cache: true
   metric: false

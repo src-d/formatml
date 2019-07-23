@@ -6,7 +6,7 @@ from asdf import AsdfFile
 
 from formatml.data.types.codrep_label import CodRepLabel
 from formatml.parsing.java_parser import JavaParser
-from formatml.parsing.parser import FORMATTING_INTERNAL_TYPE, ParsingException
+from formatml.parsing.parser import ParsingException
 from formatml.pipelines.codrep.cli_helper import CLIHelper
 from formatml.pipelines.pipeline import register_step
 from formatml.utils.config import Config
@@ -53,41 +53,24 @@ def parse(*, raw_dir: str, uasts_dir: str, configs_dir: str, log_level: str) -> 
                 len(nodes.nodes),
                 (time() - start) * 1000,
             )
-            token_indexes = set(nodes.token_indexes)
             error_offset = error_offsets[file_path.name]
-            error_node = None
-            for i, node in enumerate(nodes.nodes):
-                if i not in token_indexes:
-                    continue
+            error_node_index = None
+            for formatting_i, i in enumerate(nodes.formatting_indexes):
+                node = nodes.nodes[i]
                 if node.start == error_offset:
-                    assert node.internal_type == FORMATTING_INTERNAL_TYPE
-                    error_node = node
+                    error_node_index = formatting_i
                     break
             else:
-                for i, node in list(enumerate(nodes.nodes)):
-                    if i not in token_indexes:
-                        continue
-                    if node.start <= error_offset < node.end:
-                        logger.warning(
-                            "Could not retrieve a formatting node for the error at "
-                            "offset %d of file %s. Retrieved %s instead.",
-                            error_offset,
-                            file_path.with_suffix("").name,
-                            node,
-                        )
-                        break
-            formatting_indexes = []
-            j = 0
-            for i, node in enumerate(nodes.nodes):
-                if node.internal_type == FORMATTING_INTERNAL_TYPE:
-                    if node is error_node:
-                        error_node_index = j
-                    formatting_indexes.append(i)
-                    j += 1
+                raise RuntimeError(
+                    "Could not retrieve a formatting node for the error at "
+                    "offset %d of file %s. Retrieved %s instead.",
+                    error_offset,
+                    file_path.with_suffix("").name,
+                    node,
+                )
             codrep_label = CodRepLabel(
-                formatting_indexes=formatting_indexes,
                 error_index=error_node_index,
-                n_nodes=len(nodes.nodes),
+                n_formatting_nodes=len(nodes.formatting_indexes),
             )
         except ParsingException:
             continue

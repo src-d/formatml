@@ -5,6 +5,7 @@ from typing import List
 from asdf import open as asdf_open
 
 from formatml.data.fields.binary_label_field import BinaryLabelsField
+from formatml.data.fields.graph_fields.indexes_field import IndexesField
 from formatml.data.fields.graph_fields.internal_type_field import InternalTypeField
 from formatml.data.fields.graph_fields.length_field import LengthField
 from formatml.data.fields.graph_fields.roles_field import RolesField
@@ -62,6 +63,7 @@ def index(
         fields=[
             ("typed_dgl_graph", TypedDGLGraphField(edge_types=encoder_edge_types)),
             ("label", BinaryLabelsField()),
+            ("indexes", IndexesField()),
             ("internal_type", InternalTypeField()),
             ("roles", RolesField()),
             ("length", LengthField(max_length=max_length)),

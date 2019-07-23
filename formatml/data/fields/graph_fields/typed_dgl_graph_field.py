@@ -22,7 +22,7 @@ class TypedDGLGraphField(GraphField[TypedDGLGraphFieldOutput]):
         self.vocabulary.add_items(edge_types)
 
     def tensorize(self, sample: Nodes) -> TypedDGLGraphFieldOutput:
-        nodes, node_index, token_indexes = sample
+        nodes, node_index, token_indexes, _ = sample
         sources, targets, types = [], [], []
 
         for node in nodes:

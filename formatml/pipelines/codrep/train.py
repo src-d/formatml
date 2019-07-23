@@ -139,7 +139,8 @@ def train(
 
     graph_field = instance.fields[0]
     label_field = instance.fields[1]
-    graph_input_fields = instance.fields[2:]
+    indexes_field = instance.fields[2]
+    graph_input_fields = instance.fields[3:]
     graph_input_dimensions = [48, 48, 32]
 
     dataset = CodRepDataset(input_dir=tensors_dir_path)
@@ -161,6 +162,7 @@ def train(
         class_projection=Linear(in_features=model_encoder_output_dim, out_features=2),
         graph_field_name=graph_field[0],
         feature_field_names=feature_names,
+        indexes_field_name=indexes_field[0],
         label_field_name=label_field[0],
     )
     # The model needs a forward to be completely initialized.
