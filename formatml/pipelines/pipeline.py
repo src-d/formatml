@@ -13,12 +13,12 @@ pipelines: Dict[str, Dict[str, StepDescription]] = OrderedDict()
 
 
 def register_step(
-    pipeline_name: str, step_name: str, parser_definer: Callable[[ArgumentParser], None]
+    pipeline_name: str, parser_definer: Callable[[ArgumentParser], None]
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     def wrapper(handler: Callable[..., Any]) -> Callable[..., Any]:
         if pipeline_name not in pipelines:
             pipelines[pipeline_name] = OrderedDict()
-        pipelines[pipeline_name][step_name] = StepDescription(
+        pipelines[pipeline_name][handler.__name__] = StepDescription(
             description=handler.__doc__, parser_definer=parser_definer, handler=handler
         )
         return handler

@@ -23,9 +23,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
     cli_helper.add_log_level()
 
 
-@register_step(
-    pipeline_name="codrep", step_name="parse", parser_definer=add_arguments_to_parser
-)
+@register_step(pipeline_name="codrep", parser_definer=add_arguments_to_parser)
 def parse(*, raw_dir: str, uasts_dir: str, configs_dir: str, log_level: str) -> None:
     """Parse a CodRep 2019 dataset into UASTs."""
     Config.from_arguments(locals(), ["raw_dir", "uasts_dir"], "configs_dir").save(
