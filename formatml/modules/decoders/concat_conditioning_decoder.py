@@ -1,14 +1,14 @@
 from torch import cat, Tensor
+from torch.nn import Module
 from torch.nn.utils.rnn import PackedSequence
 
 from formatml.modules.decoders.decoder import Decoder
-from formatml.modules.misc.recurrent import Recurrent
 
 
 class ConcatConditioningDecoder(Decoder):
     """Decoder whose inputs are augmented with a conditionning tensor."""
 
-    def __init__(self, recurrent: Recurrent):
+    def __init__(self, recurrent: Module):
         super().__init__()
         self.recurrent = recurrent
 

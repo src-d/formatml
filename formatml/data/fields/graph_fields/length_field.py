@@ -10,15 +10,12 @@ from torch import (
 
 from formatml.data.fields.graph_fields.graph_field import GraphField
 from formatml.data.vocabulary import Vocabulary
-from formatml.parsing.parser import Node, Nodes
+from formatml.parsing.parser import FORMATTING_INTERNAL_TYPE, Node, Nodes
 
 
 class LengthField(GraphField[Tensor]):
-    def __init__(
-        self, *, max_length: int, formatting_internal_type: str = "Formatting"
-    ) -> None:
+    def __init__(self, *, max_length: int) -> None:
         self.max_length = max_length
-        self.formatting_internal_type = formatting_internal_type
         self.vocabulary: Vocabulary[int] = Vocabulary()
         self.vocabulary.add_items(range(self.max_length + 2))
 
@@ -32,6 +29,6 @@ class LengthField(GraphField[Tensor]):
         return tensor.to(device)
 
     def _length(self, node: Node) -> int:
-        if node.internal_type == self.formatting_internal_type:
+        if node.internal_type == FORMATTING_INTERNAL_TYPE:
             return self.max_length + 1
         return min(self.max_length, node.end - node.start)

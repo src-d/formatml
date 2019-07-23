@@ -25,7 +25,6 @@ class RepositoriesDataset(Dataset):
         parser: Parser,
         parallel_downloads: int = 10,
         bblfsh_endpoint: str = "0.0.0.0:9999",
-        formatting_internal_type: str = "Formatting",
         n_workers: int = cpu_count(),
         pickle_protocol: int = 4,
     ) -> None:
@@ -45,7 +44,6 @@ class RepositoriesDataset(Dataset):
                 instance=instance,
                 parser=parser,
                 bblfsh_endpoint=bblfsh_endpoint,
-                formatting_internal_type=formatting_internal_type,
                 n_workers=n_workers,
                 pickle_protocol=pickle_protocol,
             )

@@ -7,7 +7,7 @@ from asdf import AsdfFile
 
 from formatml.data.types.codrep_label import CodRepLabel
 from formatml.parsing.java_parser import JavaParser
-from formatml.parsing.parser import ParsingException
+from formatml.parsing.parser import FORMATTING_INTERNAL_TYPE, ParsingException
 from formatml.pipelines.pipeline import register_step
 from formatml.utils.helpers import setup_logging
 
@@ -27,7 +27,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
 @register_step(
     pipeline_name="codrep", step_name="parse", parser_definer=add_arguments_to_parser
 )
-def codrep_train(*, input_dir: str, output_dir: str, log_level: str) -> None:
+def parse(*, input_dir: str, output_dir: str, log_level: str) -> None:
     """Parse a CodRep 2019 dataset into UASTs."""
     setup_logging(log_level)
     logger = getLogger(__name__)
@@ -61,7 +61,7 @@ def codrep_train(*, input_dir: str, output_dir: str, log_level: str) -> None:
                 if i not in token_indexes:
                     continue
                 if node.start == error_offset:
-                    assert node.internal_type == parser.formatting_internal_type
+                    assert node.internal_type == FORMATTING_INTERNAL_TYPE
                     error_node = node
                     break
             else:
@@ -80,7 +80,7 @@ def codrep_train(*, input_dir: str, output_dir: str, log_level: str) -> None:
             formatting_indexes = []
             j = 0
             for i, node in enumerate(nodes.nodes):
-                if node.internal_type == parser.formatting_internal_type:
+                if node.internal_type == FORMATTING_INTERNAL_TYPE:
                     if node is error_node:
                         error_node_index = j
                     formatting_indexes.append(i)
