@@ -61,12 +61,14 @@ def index(
 
     instance = Instance(
         fields=[
-            ("typed_dgl_graph", TypedDGLGraphField(edge_types=encoder_edge_types)),
-            ("label", BinaryLabelsField()),
-            ("indexes", IndexesField()),
-            ("internal_type", InternalTypeField()),
-            ("roles", RolesField()),
-            ("length", LengthField(max_length=max_length)),
+            TypedDGLGraphField(
+                name="typed_dgl_graph", type="graph", edge_types=encoder_edge_types
+            ),
+            BinaryLabelsField(name="label", type="label"),
+            IndexesField(name="indexes", type="indexes"),
+            InternalTypeField(name="internal_type", type="input"),
+            RolesField(name="roles", type="input"),
+            LengthField(name="max_length", type="input", max_length=max_length),
         ]
     )
 

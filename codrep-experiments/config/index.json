@@ -1,1 +1,0 @@
-{"options": {"encoder_edge_types": ["child", "parent", "previous_token", "next_token"], "max_length": 128, "log_level": "DEBUG"}, "data": {"uasts_dir": "./data/uasts", "instance_file": "./data/instance.pickle.bz2"}, "config": "./config"}

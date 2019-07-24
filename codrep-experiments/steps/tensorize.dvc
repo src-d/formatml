@@ -1,16 +1,16 @@
-md5: a6c1208cb6a1f8ad17d983281be78976
+md5: bb39e923cb73e7fe572e9a3aedfba5db
 cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep tensorize --uasts-dir
-  ./data/uasts --instance-file ./data/instance.pickle.bz2 --tensors-dir ./data/tensors
-  --configs-dir ./config
+  ./outputs/uasts --instance-file ./outputs/instance.pickle.bz2 --tensors-dir ./outputs/tensors
+  --configs-dir ./configs
 wdir: ..
 deps:
 - md5: ed6154770e0e6675c8df8a4fa3fe1840.dir
-  path: data/uasts
-- md5: 27e9c6f91ed805ac522190fc91d65581
-  path: data/instance.pickle.bz2
+  path: outputs/uasts
+- md5: 1625cc4dc05a86f2ac3088208174d1f7
+  path: outputs/instance.pickle.bz2
 outs:
-- md5: 0b4621071a85613d75b9294c50671853.dir
-  path: data/tensors
+- md5: 2b68085a7624c542d78c5a73fddf540d.dir
+  path: outputs/tensors
   cache: true
   metric: false
   persist: false

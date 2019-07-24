@@ -1,0 +1,1 @@
+{"options": {"log_level": "DEBUG"}, "data": {"raw_dir": "./outputs/raw", "uasts_dir": "./outputs/uasts"}, "config": "./configs"}

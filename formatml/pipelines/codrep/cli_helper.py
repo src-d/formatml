@@ -10,6 +10,13 @@ class CLIHelper:
             "--configs-dir", required=True, help="Path to the configs."
         )
 
+    def add_raw_dir(self) -> None:
+        self.parser.add_argument(
+            "--raw-dir",
+            required=True,
+            help="Path to the CodRep 2019 formatted dataset.",
+        )
+
     def add_tensors_dir(self) -> None:
         self.parser.add_argument(
             "--tensors-dir", required=True, help="Path to the instance pickle."

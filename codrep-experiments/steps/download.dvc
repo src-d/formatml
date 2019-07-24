@@ -1,11 +1,11 @@
-md5: 816bd10903ee4723e67217149d9d05fd
+md5: 7e10bd37dcd5524ea9db150ef000cf5c
 wdir: ..
 deps:
 - etag: '"0468a81de99867dae1680374ae8b308693e34ff7"'
   path: https://github.com/KTH/codrep-2019/archive/master.zip
 outs:
 - md5: 902db5641a3194900e500e04bd8d12d3
-  path: data/master.zip
+  path: outputs/master.zip
   cache: true
   metric: false
   persist: false

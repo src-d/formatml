@@ -8,6 +8,7 @@ from torch.nn import Linear
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 
+from formatml.data.instance import Instance
 from formatml.datasets.codrep_dataset import CodRepDataset
 from formatml.models.gnn_ff import GNNFFModel
 from formatml.modules.graph_encoders.ggnn import GGNN
@@ -143,37 +144,18 @@ def train(
     with bz2_open(instance_file, "rb") as fh:
         instance = pickle_load(fh)
 
-    graph_field = instance.fields[0]
-    label_field = instance.fields[1]
-    indexes_field = instance.fields[2]
-    graph_input_fields = instance.fields[3:]
-    graph_input_dimensions = [48, 48, 32]
-
     dataset = CodRepDataset(input_dir=tensors_dir_path)
-    logger.info(f"Dataset of size {len(dataset)}")
+    logger.info("Dataset of size %d", len(dataset))
 
-    feature_names = [name for name, _ in graph_input_fields]
-    model = GNNFFModel(
-        graph_embedder=GraphEmbedding(
-            graph_input_dimensions,
-            [field.vocabulary for _, field in graph_input_fields],  # type: ignore
-        ),
-        graph_encoder=GGNN(
-            iterations=model_encoder_iterations,
-            n_types=len(graph_field[1].vocabulary),
-            x_dim=sum(graph_input_dimensions),
-            h_dim=model_encoder_output_dim,
-            m_dim=model_encoder_message_dim,
-        ),
-        class_projection=Linear(in_features=model_encoder_output_dim, out_features=2),
-        graph_field_name=graph_field[0],
-        feature_field_names=feature_names,
-        indexes_field_name=indexes_field[0],
-        label_field_name=label_field[0],
+    model = build_model(
+        instance=instance,
+        model_encoder_iterations=model_encoder_iterations,
+        model_encoder_output_dim=model_encoder_output_dim,
+        model_encoder_message_dim=model_encoder_message_dim,
     )
     # The model needs a forward to be completely initialized.
     model(dataset[0])
-    logger.info(f"Configured model {model}")
+    logger.info("Configured model %s", model)
 
     optimizer = Adam(params=model.parameters(), lr=optimizer_learning_rate)
     scheduler = StepLR(
@@ -195,3 +177,35 @@ def train(
         cuda_device=trainer_cuda,
     )
     trainer.train()
+
+
+def build_model(
+    instance: Instance,
+    model_encoder_iterations: int,
+    model_encoder_output_dim: int,
+    model_encoder_message_dim: int,
+) -> GNNFFModel:
+    graph_field = instance.get_field_by_type("graph")
+    label_field = instance.get_field_by_type("label")
+    indexes_field = instance.get_field_by_type("indexes")
+    graph_input_fields = instance.get_fields_by_type("input")
+    graph_input_dimensions = [48, 48, 32]
+    feature_names = [field.name for field in graph_input_fields]
+    return GNNFFModel(
+        graph_embedder=GraphEmbedding(
+            graph_input_dimensions,
+            [field.vocabulary for field in graph_input_fields],  # type: ignore
+        ),
+        graph_encoder=GGNN(
+            iterations=model_encoder_iterations,
+            n_types=len(graph_field.vocabulary),  # type: ignore
+            x_dim=sum(graph_input_dimensions),
+            h_dim=model_encoder_output_dim,
+            m_dim=model_encoder_message_dim,
+        ),
+        class_projection=Linear(in_features=model_encoder_output_dim, out_features=2),
+        graph_field_name=graph_field.name,
+        feature_field_names=feature_names,
+        indexes_field_name=indexes_field.name,
+        label_field_name=label_field.name,
+    )
