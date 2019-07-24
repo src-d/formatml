@@ -8,12 +8,12 @@ from torch import (
     tensor,
 )
 
-from formatml.data.fields.graph_fields.graph_field import GraphField
+from formatml.data.fields.field import Field
 from formatml.data.vocabulary import Vocabulary
 from formatml.parsing.parser import Nodes
 
 
-class InternalTypeField(GraphField[Tensor]):
+class InternalTypeField(Field[Nodes, Tensor]):
     def __init__(self, name: str, type: str) -> None:
         super().__init__(name, type)
         self.vocabulary = Vocabulary(unknown="<UNK>")

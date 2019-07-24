@@ -2,7 +2,7 @@ from typing import Iterable, List, NamedTuple
 
 from torch import cat, device as torch_device, long as torch_long, Tensor, tensor
 
-from formatml.data.fields.graph_fields.graph_field import GraphField
+from formatml.data.fields.field import Field
 from formatml.data.vocabulary import Vocabulary
 from formatml.parsing.parser import Nodes
 
@@ -14,7 +14,7 @@ class RolesFieldOutput(NamedTuple):
     offsets: Tensor
 
 
-class RolesField(GraphField[RolesFieldOutput]):
+class RolesField(Field[Nodes, RolesFieldOutput]):
     def __init__(self, name: str, type: str) -> None:
         super().__init__(name, type)
         self.vocabulary = Vocabulary(unknown="<UNK>")
