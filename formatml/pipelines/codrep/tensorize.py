@@ -89,9 +89,13 @@ def _tensorize_worker(
 ) -> None:
     logger.debug(f"Tensorizing {file_path}")
     with asdf_open(str(uasts_dir_path / file_path)) as af:
-        nodes_instance = Nodes.from_tree(af.tree["nodes"])
-        codrep_label = CodRepLabel.from_tree(af.tree["codrep_label"])
-    tensors = instance.tensorize({Nodes: nodes_instance, CodRepLabel: codrep_label})
+        tensors = instance.tensorize(
+            {
+                Nodes: Nodes.from_tree(af.tree["nodes"]),
+                CodRepLabel: CodRepLabel.from_tree(af.tree["codrep_label"]),
+                str: af.tree["filepath"],
+            }
+        )
     output_dir = (output_dir_path / file_path).parent
     output_dir.mkdir(parents=True, exist_ok=True)
     with bz2_open((output_dir / file_path.name).with_suffix(".pickle.bz2"), "wb") as fh:

@@ -1,7 +1,7 @@
 check:
 	black --check formatml setup.py
-	mypy formatml
-	flake8 --count
+	mypy formatml setup.py
+	flake8 --count formatml setup.py
 	pylint formatml setup.py
 
 bblfshd:

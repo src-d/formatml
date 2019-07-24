@@ -85,6 +85,7 @@ def parse(*, raw_dir: str, uasts_dir: str, configs_dir: str, log_level: str) -> 
                 dict(
                     nodes=nodes.to_tree(file_path.read_text(encoding="utf-8")),
                     codrep_label=codrep_label.to_tree(),
+                    filepath=str(file_path_relative),
                 )
             )
             af.write_to(fh, all_array_compression="bzp2")
