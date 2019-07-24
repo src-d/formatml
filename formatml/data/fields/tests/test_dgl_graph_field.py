@@ -1,6 +1,6 @@
 from typing import List
 
-from formatml.data.fields.graph_fields.typed_dgl_graph_field import TypedDGLGraphField
+from formatml.data.fields.typed_dgl_graph_field import TypedDGLGraphField
 from formatml.parsing.parser import Nodes
 
 

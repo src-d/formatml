@@ -3,7 +3,7 @@ from typing import Iterable, List, NamedTuple, Tuple
 from torch import device as torch_device, long as torch_long, Tensor, tensor
 from torch.nn.utils.rnn import pack_sequence, PackedSequence
 
-from formatml.data.fields.graph_fields.graph_field import GraphField
+from formatml.data.fields.field import Field
 from formatml.data.vocabulary import Vocabulary
 from formatml.parsing.parser import FORMATTING_INTERNAL_TYPE, Nodes
 from formatml.utils.torch_helpers import unpack_packed_sequence
@@ -18,7 +18,7 @@ class LabelFieldOutput(NamedTuple):
     n_nodes: int
 
 
-class LabelField(GraphField[LabelFieldOutput]):
+class LabelField(Field[Nodes, LabelFieldOutput]):
     def __init__(self, name: str, type: str) -> None:
         super().__init__(name, type)
         self.vocabulary = Vocabulary(unknown="<UNK>")

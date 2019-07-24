@@ -8,12 +8,12 @@ from torch import (
     tensor,
 )
 
-from formatml.data.fields.graph_fields.graph_field import GraphField
+from formatml.data.fields.field import Field
 from formatml.data.vocabulary import Vocabulary
 from formatml.parsing.parser import FORMATTING_INTERNAL_TYPE, Node, Nodes
 
 
-class LengthField(GraphField[Tensor]):
+class LengthField(Field[Nodes, Tensor]):
     def __init__(self, *, name: str, type: str, max_length: int) -> None:
         super().__init__(name, type)
         self.max_length = max_length
