@@ -8,6 +8,7 @@ from formatml.data.fields.binary_label_field import BinaryLabelsField
 from formatml.data.fields.indexes_field import IndexesField
 from formatml.data.fields.internal_type_field import InternalTypeField
 from formatml.data.fields.length_field import LengthField
+from formatml.data.fields.metadata_field import MetadataField
 from formatml.data.fields.roles_field import RolesField
 from formatml.data.fields.typed_dgl_graph_field import TypedDGLGraphField
 from formatml.data.instance import Instance
@@ -64,6 +65,7 @@ def index(
             TypedDGLGraphField(
                 name="typed_dgl_graph", type="graph", edge_types=encoder_edge_types
             ),
+            MetadataField(name="metadata", type="metadata"),
             BinaryLabelsField(name="label", type="label"),
             IndexesField(name="indexes", type="indexes"),
             InternalTypeField(name="internal_type", type="input"),
@@ -75,8 +77,12 @@ def index(
     logger.info(f"Indexing %s", uasts_dir_path)
     for file_path in uasts_dir_path.rglob("*.asdf"):
         with asdf_open(str(file_path)) as af:
-            nodes_instance = Nodes.from_tree(af.tree["nodes"])
-            codrep_label = af.tree["codrep_label"]
-            instance.index({Nodes: nodes_instance, CodRepLabel: codrep_label})
+            instance.index(
+                {
+                    Nodes: Nodes.from_tree(af.tree["nodes"]),
+                    CodRepLabel: CodRepLabel.from_tree(af.tree["codrep_label"]),
+                    str: af.tree["filepath"],
+                }
+            )
     instance.save(instance_file_path)
     logger.info(f"Indexed  %s", uasts_dir_path)

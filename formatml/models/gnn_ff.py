@@ -1,6 +1,8 @@
+from bisect import bisect_right
 from logging import getLogger
 from typing import Any, Dict, List
 
+from dgl import unbatch
 from torch import float as torch_float, tensor
 from torch.nn import LogSoftmax, Module, NLLLoss
 
@@ -58,5 +60,21 @@ class GNNFFModel(Model):
             sample["loss"] = self.nll(softmaxed, labels)
         return sample
 
-    def decode(self, sample: Dict[str, Any]) -> None:
-        print(sample["forward"])
+    def decode(self, sample: Dict[str, Any], prefix: str = "") -> None:
+        batched_graph = sample["typed_dgl_graph"].graph
+        graphs = unbatch(batched_graph)
+        start = 0
+        total_number_of_nodes = 0
+        bounds = []
+        numpy_indexes = sample["indexes"].indexes.cpu().numpy()
+        for graph in graphs:
+            total_number_of_nodes += graph.number_of_nodes()
+            end = bisect_right(numpy_indexes, total_number_of_nodes - 1)
+            bounds.append((start, end))
+            start = end
+        for (start, end), path in zip(bounds, sample["metadata"]):
+            predictions = sample["indexes"].offsets[start:end][
+                sample["forward"][start:end, 1].argsort(descending=True)
+            ]
+            predictions += 1
+            print("%s%s %s" % (prefix, path, " ".join(map(str, predictions.numpy()))))

@@ -8,6 +8,7 @@ from formatml.parsing.parser import Nodes
 
 class IndexesFieldOutput(NamedTuple):
     indexes: Tensor
+    offsets: Tensor
     n_nodes: int
 
 
@@ -15,6 +16,10 @@ class IndexesField(Field[Nodes, IndexesFieldOutput]):
     def tensorize(self, inputs: Nodes) -> IndexesFieldOutput:
         return IndexesFieldOutput(
             indexes=tensor(inputs.formatting_indexes, dtype=torch_long),
+            offsets=tensor(
+                [inputs.nodes[i].start for i in inputs.formatting_indexes],
+                dtype=torch_long,
+            ),
             n_nodes=len(inputs.nodes),
         )
 
@@ -26,12 +31,16 @@ class IndexesField(Field[Nodes, IndexesFieldOutput]):
             offset_indexes.append(t.indexes + offset)
             offset += t.n_nodes
         return IndexesFieldOutput(
-            indexes=cat(offset_indexes), n_nodes=sum(t.n_nodes for t in tensors_list)
+            indexes=cat(offset_indexes),
+            offsets=cat([t.offsets for t in tensors_list]),
+            n_nodes=sum(t.n_nodes for t in tensors_list),
         )
 
     def to(
         self, tensor: IndexesFieldOutput, device: torch_device
     ) -> IndexesFieldOutput:
         return IndexesFieldOutput(
-            indexes=tensor.indexes.to(device), n_nodes=tensor.n_nodes
+            indexes=tensor.indexes.to(device),
+            offsets=tensor.offsets.to(device),
+            n_nodes=tensor.n_nodes,
         )

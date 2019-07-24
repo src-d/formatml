@@ -32,6 +32,9 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         required=True,
         help="Path to the configs used for training.",
     )
+    parser.add_argument(
+        "--prefix", required=True, help="Path prefixing the output paths."
+    )
     cli_helper.add_log_level()
 
 
@@ -45,6 +48,7 @@ def run(
     checkpoint_file: str,
     configs_dir: str,
     training_configs_dir: str,
+    prefix: str,
     log_level: str,
 ) -> None:
     """Run the model and output CodRep predictions."""
@@ -119,4 +123,4 @@ def run(
     with no_grad():
         for sample in dataloader:
             sample = model(sample)
-            model.decode(sample)
+            model.decode(sample, prefix=prefix)

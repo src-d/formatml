@@ -1,7 +1,7 @@
 from bz2 import open as bz2_open
 from pathlib import Path
 from pickle import dump as pickle_dump
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from torch import device as torch_device
 
@@ -77,8 +77,13 @@ class Instance:
 
     def _select_input(self, field: Field, inputs: Any) -> Any:
         field_inputs_cls = self._field_input_types[field]
-        if isinstance(inputs, field_inputs_cls):
+        if not isinstance(inputs, dict) and isinstance(inputs, field_inputs_cls):
             return inputs
+        if hasattr(field_inputs_cls, "__origin__") and field_inputs_cls.__origin__ in [
+            tuple,
+            Tuple,
+        ]:
+            return tuple(inputs[c] for c in field_inputs_cls.__args__)
         return inputs[field_inputs_cls]  # type: ignore
 
     def __getitem__(self, field_name: str) -> Field:
