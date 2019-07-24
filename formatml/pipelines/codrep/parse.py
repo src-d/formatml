@@ -36,11 +36,14 @@ def parse(*, raw_dir: str, uasts_dir: str, configs_dir: str, log_level: str) -> 
 
     parser = JavaParser(split_formatting=True)
     logger.info("Parsing %s", raw_dir_path)
-    error_offsets = {}
-    for i, line in enumerate((raw_dir_path / "out.txt").open("r", encoding="utf8")):
-        error_offsets["%d.txt" % i] = int(line) - 1
+    labels_file = raw_dir_path / "out.txt"
+    extract_labels = labels_file.is_file()
+    if extract_labels:
+        error_offsets = {}
+        for i, line in enumerate(labels_file.open("r", encoding="utf8")):
+            error_offsets["%d.txt" % i] = int(line) - 1
     for file_path in raw_dir_path.rglob("*.txt"):
-        if file_path.name == "out.txt":
+        if file_path.samefile(labels_file):
             continue
         file_path_relative = file_path.relative_to(raw_dir_path)
         try:
@@ -53,21 +56,22 @@ def parse(*, raw_dir: str, uasts_dir: str, configs_dir: str, log_level: str) -> 
                 len(nodes.nodes),
                 (time() - start) * 1000,
             )
-            error_offset = error_offsets[file_path.name]
             error_node_index = None
-            for formatting_i, i in enumerate(nodes.formatting_indexes):
-                node = nodes.nodes[i]
-                if node.start == error_offset:
-                    error_node_index = formatting_i
-                    break
-            else:
-                raise RuntimeError(
-                    "Could not retrieve a formatting node for the error at "
-                    "offset %d of file %s. Retrieved %s instead.",
-                    error_offset,
-                    file_path.with_suffix("").name,
-                    node,
-                )
+            if extract_labels:
+                error_offset = error_offsets[file_path.name]
+                for formatting_i, i in enumerate(nodes.formatting_indexes):
+                    node = nodes.nodes[i]
+                    if node.start == error_offset:
+                        error_node_index = formatting_i
+                        break
+                else:
+                    raise RuntimeError(
+                        "Could not retrieve a formatting node for the error at "
+                        "offset %d of file %s. Retrieved %s instead.",
+                        error_offset,
+                        file_path.with_suffix("").name,
+                        node,
+                    )
             codrep_label = CodRepLabel(
                 error_index=error_node_index,
                 n_formatting_nodes=len(nodes.formatting_indexes),

@@ -48,8 +48,9 @@ class GNNFFModel(Model):
         label_encodings = self.selector(tensor=encodings, indexes=formatting_indexes)
         projections = self.class_projection(label_encodings)
         softmaxed = self.softmax(projections)
-        if self.label_field_name in instance:
-            loss = self.nll(softmaxed, instance[self.label_field_name])
+        labels = instance[self.label_field_name]
+        if labels is not None:
+            loss = self.nll(softmaxed, labels)
         else:
             loss = None
         return ModelOutput(output=softmaxed, loss=loss)
