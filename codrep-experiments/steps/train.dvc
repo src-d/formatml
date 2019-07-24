@@ -1,4 +1,4 @@
-md5: 84754d9b4c889c24c6a65c6aca6b1ced
+md5: 15afb92cafb5ae3017b688a0b4a0c9a1
 cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep train --instance-file
   ./outputs/instance.pickle.bz2 --tensors-dir ./outputs/tensors --train-dir ./outputs/train
   --configs-dir ./configs --trainer-train-eval-split 0.99 --trainer-eval-every 50
@@ -10,7 +10,7 @@ deps:
 - md5: e27f5eb86ff80f3dd3bea0857b695788.dir
   path: outputs/tensors
 outs:
-- md5: 33895d27fd764ee4017672e0164d17fa.dir
+- md5: 3343acc0868a79ec2192261a4cf54820.dir
   path: outputs/train
   cache: true
   metric: false
