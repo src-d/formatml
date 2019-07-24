@@ -99,6 +99,7 @@ class Trainer:
         batch_size: int,
         run_dir_path: Path,
         eval_every: int,
+        limit_epochs_at: Optional[int],
         train_eval_split: float,
         metric_names: List[str],
         cuda_device: Optional[int],
@@ -112,6 +113,7 @@ class Trainer:
         self.run_dir_path = run_dir_path
         self.eval_every = eval_every
         self.train_eval_split = train_eval_split
+        self.limit_epochs_at = limit_epochs_at
         if cuda_device is not None:
             if not cuda_is_available():
                 raise RuntimeError("CUDA is not available on this system.")
@@ -141,8 +143,6 @@ class Trainer:
                 str(self.run_dir_path / data_type.value)
             )
         self._global_step = 0
-        self.epochs_size = len(str(self.epochs))
-        self.iterations_size = len(str(1000))
         train_size = round(len(self.dataset) * self.train_eval_split)
         eval_size = len(self.dataset) - train_size
         train_dataset, eval_dataset = random_split(
@@ -167,7 +167,12 @@ class Trainer:
             ),
         }
         self._iterations_size = len(
-            str(max(len(dataloader) for dataloader in self._dataloaders.values()))
+            str(
+                max(
+                    min(self.limit_epochs_at, len(dataloader))
+                    for dataloader in self._dataloaders.values()
+                )
+            )
         )
         for epoch in range(1, self.epochs + 1):
             self._train_epoch(epoch)
@@ -176,6 +181,8 @@ class Trainer:
     def _train_epoch(self, epoch: int) -> None:
         self.model.train()
         for iteration, sample in enumerate(self._dataloaders[DataType.Train], start=1):
+            if self.limit_epochs_at is not None and iteration > self.limit_epochs_at:
+                break
             sample = self.instance.to(sample, self.device)
             forward = self.model.forward(sample)
             self._compute_metrics(
