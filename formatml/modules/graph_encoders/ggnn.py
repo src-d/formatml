@@ -7,7 +7,7 @@ from dgl import DGLGraph
 from dgl.function import sum as dgl_sum
 from dgl.init import zero_initializer
 from dgl.udf import EdgeBatch, NodeBatch
-from torch import Tensor
+from torch import Tensor, zeros
 from torch.nn import GRUCell, Linear, ModuleList
 
 from formatml.modules.graph_encoders.graph_encoder import GraphEncoder
@@ -29,6 +29,9 @@ class GGNN(GraphEncoder):
         super().__init__()
         self.iterations = iterations
         self.n_types = n_types
+        self.x_dim = x_dim
+        self.h_dim = h_dim
+        self.m_dim = m_dim
         self.linears = ModuleList([Linear(h_dim, m_dim) for _n in range(n_types)])
         self.gru = GRUCell(input_size=m_dim, hidden_size=h_dim)
 
@@ -66,4 +69,6 @@ class GGNN(GraphEncoder):
         return {"h": self.gru(input=node_batch.data["s"], hx=node_batch.data["h"])}
 
     def _initialize(self, node_batch: NodeBatch) -> Dict[str, Tensor]:
-        return {"h": node_batch.data["x"]}
+        h = zeros((node_batch.data["x"].shape[0], self.h_dim))
+        h[:, : node_batch.data["x"].shape[1]] = node_batch.data["x"]
+        return {"h": h}
