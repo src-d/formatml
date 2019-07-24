@@ -86,6 +86,11 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         default=200,
     )
     parser.add_argument(
+        "--trainer-limit-epochs-at",
+        help="Number of batches to limit an epoch to.",
+        type=int,
+    )
+    parser.add_argument(
         "--trainer-train-eval-split",
         help="Proportion kept for training (defaults to %(default)s). "
         "Rest goes to evaluation.",
@@ -120,6 +125,7 @@ def train(
     trainer_epochs: int,
     trainer_batch_size: int,
     trainer_eval_every: int,
+    trainer_limit_epochs_at: Optional[int],
     trainer_train_eval_split: float,
     trainer_metric_names: List[str],
     trainer_cuda: Optional[int],
@@ -179,6 +185,7 @@ def train(
         batch_size=trainer_batch_size,
         eval_every=trainer_eval_every,
         train_eval_split=trainer_train_eval_split,
+        limit_epochs_at=trainer_limit_epochs_at,
         metric_names=trainer_metric_names,
         run_dir_path=train_dir_path,
         dataset=dataset,

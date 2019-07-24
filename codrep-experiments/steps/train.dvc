@@ -1,0 +1,17 @@
+md5: a46a5cc746542f630dc27ab128f49209
+cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep train --instance-file
+  ./data/instance.pickle.bz2 --tensors-dir ./data/tensors --train-dir ./data/train
+  --configs-dir ./config --trainer-train-eval-split 0.99 --trainer-eval-every 50 --trainer-limit-epochs-at
+  50 --trainer-epochs 3
+wdir: ..
+deps:
+- md5: 27e9c6f91ed805ac522190fc91d65581
+  path: data/instance.pickle.bz2
+- md5: 0b4621071a85613d75b9294c50671853.dir
+  path: data/tensors
+outs:
+- md5: 41301ec6ba255d0a4900aeba608c2fd2.dir
+  path: data/train
+  cache: true
+  metric: false
+  persist: false
