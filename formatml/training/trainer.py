@@ -1,15 +1,13 @@
 from bisect import bisect_right
-from bz2 import open as bz2_open
 from collections import defaultdict
 from enum import Enum, unique
 from io import StringIO
 from logging import DEBUG, getLogger, INFO
 from pathlib import Path
-from pickle import dump as pickle_dump
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from dgl import unbatch
-from torch import device as torch_device, no_grad
+from torch import device as torch_device, no_grad, save as torch_save
 from torch.cuda import is_available as cuda_is_available
 from torch.optim.optimizer import Optimizer
 from torch.utils.data.dataloader import DataLoader
@@ -18,7 +16,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from formatml.data.instance import Instance
 from formatml.datasets.dataset import Dataset
-from formatml.models.model import Model, ModelOutput
+from formatml.models.model import Model
 from formatml.utils.torch_helpers import data_if_packed
 
 
@@ -30,7 +28,7 @@ class DataType(Enum):
 
 _metrics = {}
 
-Metric = Callable[[ModelOutput, Dict[str, Any]], float]
+Metric = Callable[[Dict[str, Any]], float]
 
 
 def register_metric(name: str) -> Callable[[Metric], Metric]:
@@ -42,17 +40,17 @@ def register_metric(name: str) -> Callable[[Metric], Metric]:
 
 
 @register_metric(name="cross_entropy")
-def _cross_entropy(forward: ModelOutput, sample: Dict[str, Any]) -> float:
-    return data_if_packed(forward.loss).item()
+def _cross_entropy(sample: Dict[str, Any]) -> float:
+    return data_if_packed(sample["loss"]).item()
 
 
 @register_metric(name="perplexity")
-def _perplexity(forward: ModelOutput, sample: Dict[str, Any]) -> float:
-    return 2 ** data_if_packed(forward.loss).item()
+def _perplexity(sample: Dict[str, Any]) -> float:
+    return 2 ** data_if_packed(sample["loss"]).item()
 
 
 @register_metric(name="mrr")
-def _mrr(forward: ModelOutput, sample: Dict[str, Any]) -> float:
+def _mrr(sample: Dict[str, Any]) -> float:
     labels = sample["label"]
     ground_truth = data_if_packed(labels).argmax(dim=0)
     batched_graph = sample["typed_dgl_graph"].graph
@@ -68,7 +66,7 @@ def _mrr(forward: ModelOutput, sample: Dict[str, Any]) -> float:
         start = end
     ranks = []
     for start, end in bounds:
-        predictions = data_if_packed(forward.output)[start:end, 1].argsort(
+        predictions = data_if_packed(sample["forward"])[start:end, 1].argsort(
             descending=True
         )
         ground_truth = data_if_packed(labels)[start:end].argmax(dim=0)
@@ -77,10 +75,10 @@ def _mrr(forward: ModelOutput, sample: Dict[str, Any]) -> float:
 
 
 @register_metric(name="accuracy_max_decoding")
-def _accuracy_max_decoding(forward: ModelOutput, sample: Dict[str, Any]) -> float:
+def _accuracy_max_decoding(sample: Dict[str, Any]) -> float:
     label = sample["label"].labels
     return (
-        data_if_packed(forward.output).argmax(dim=1) == data_if_packed(label)
+        data_if_packed(sample["forward"]).argmax(dim=1) == data_if_packed(label)
     ).sum().item() / data_if_packed(label).nelement()
 
 
@@ -184,9 +182,8 @@ class Trainer:
             if self.limit_epochs_at is not None and iteration > self.limit_epochs_at:
                 break
             sample = self.instance.to(sample, self.device)
-            forward = self.model.forward(sample)
+            sample = self.model(sample)
             self._compute_metrics(
-                forward=forward,
                 sample=sample,
                 data_type=DataType.Train,
                 accumulate=False,
@@ -195,7 +192,7 @@ class Trainer:
                 iteration=iteration,
             )
             self.optimizer.zero_grad()
-            forward.loss.backward()
+            sample["loss"].backward()
             self.optimizer.step()
             if self.eval_every > 0 and (self._global_step + 1) % self.eval_every == 0:
                 self._eval_epoch(epoch)
@@ -209,9 +206,8 @@ class Trainer:
                 self._dataloaders[DataType.Eval], start=1
             ):
                 sample = self.instance.to(sample, self.device)
-                forward = self.model.forward(sample)
+                sample = self.model.forward(sample)
                 self._compute_metrics(
-                    forward=forward,
                     sample=sample,
                     data_type=DataType.Eval,
                     accumulate=True,
@@ -225,25 +221,23 @@ class Trainer:
         )
 
     def _save_checkpoint(self, epoch: int, iteration: Optional[int] = None) -> None:
-        checkpoint_name = f"e{epoch}"
+        checkpoint_name = "e%d" % epoch
         if iteration is not None:
-            checkpoint_name += f"-i{iteration}"
-        checkpoint_name += ".pickle.bz2"
-        with bz2_open(self._checkpoints_dir / checkpoint_name, "wb") as fh:
-            pickle_dump(
-                dict(
-                    model_state_dict=self.model.state_dict,
-                    optimizer_state_dict=self.optimizer.state_dict,
-                    scheduler_state_dict=self.scheduler.state_dict,
-                    epoch=epoch,
-                    iteration=iteration,
-                ),
-                fh,
-            )
+            checkpoint_name += "-i%d" % iteration
+        checkpoint_name += ".tar"
+        torch_save(
+            dict(
+                model_state_dict=self.model.state_dict(),
+                optimizer_state_dict=self.optimizer.state_dict(),
+                scheduler_state_dict=self.scheduler.state_dict(),
+                epoch=epoch,
+                iteration=iteration,
+            ),
+            str(self._checkpoints_dir / checkpoint_name),
+        )
 
     def _compute_metrics(
         self,
-        forward: ModelOutput,
         sample: Dict[str, Any],
         data_type: DataType,
         accumulate: bool,
@@ -252,7 +246,7 @@ class Trainer:
         iteration: int,
     ) -> None:
         self._log_values(
-            values=((metric, metric(forward, sample)) for metric in self._metrics),
+            values=((metric, metric(sample)) for metric in self._metrics),
             data_type=data_type,
             send_event=send_event,
             accumulate=accumulate,
@@ -298,14 +292,22 @@ class Trainer:
     ) -> None:
         with StringIO() as buffer:
             buffer.write(
-                f"{data_type.value} "
-                f"{epoch:{self._epochs_size}d}/{self.epochs:{self._epochs_size}d} "
-                f"{iteration:{self._iterations_size}d}"
-                f"/{len(self._dataloaders[data_type]):{self._iterations_size}d}"
+                "%s %*d/%*d %*d/%*d"
+                % (
+                    data_type.value,
+                    self._epochs_size,
+                    epoch,
+                    self._epochs_size,
+                    self.epochs,
+                    self._iterations_size,
+                    iteration,
+                    self._iterations_size,
+                    min(self.limit_epochs_at, len(self._dataloaders[data_type])),
+                )
             )
             for metric, value in values:
                 name = self._metric_names[metric]
-                buffer.write(f" {name} {value:.4f}")
+                buffer.write(" %s %.4f" % (name, value))
                 if accumulate:
                     self._accumulated_metrics[data_type][metric].append(value)
                 if send_event:

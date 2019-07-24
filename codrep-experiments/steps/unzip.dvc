@@ -1,13 +1,13 @@
-md5: e176adfb0037a058745c29d95e43339f
-cmd: "unzip ./data/master.zip \t\t&& mv codrep-2019-master/Datasets/learning ./data/raw\
+md5: 958f77b698fa2d70932d188c4ae95206
+cmd: "unzip ./outputs/master.zip \t\t&& mv codrep-2019-master/Datasets/learning ./outputs/raw\
   \ \t\t&& rm -rf codrep-2019-master"
 wdir: ..
 deps:
 - md5: 902db5641a3194900e500e04bd8d12d3
-  path: data/master.zip
+  path: outputs/master.zip
 outs:
 - md5: d36fd902a676b091eaf4cd4d6774abca.dir
-  path: data/raw
+  path: outputs/raw
   cache: true
   metric: false
   persist: false

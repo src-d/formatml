@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from torch.nn import LogSoftmax, NLLLoss
 from torch.nn.utils.rnn import PackedSequence
 
-from formatml.models.model import Model, ModelOutput
+from formatml.models.model import Model
 from formatml.modules.decoders.decoder import Decoder
 from formatml.modules.graph_encoders.graph_encoder import GraphEncoder
 from formatml.modules.misc.graph_embedding import GraphEmbedding
@@ -43,11 +43,11 @@ class GNNRNNModel(Model):
         self.softmax = LogSoftmax(dim=1)
         self.nll = NLLLoss()
 
-    def forward(self, instance: Dict[str, Any]) -> ModelOutput:  # type: ignore
+    def forward(self, sample: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """Forward pass of an embedder, encoder and decoder."""
-        graph, edge_types = instance[self.graph_field_name]
-        features = [instance[field_name] for field_name in self.feature_field_names]
-        label_indexes, decoder_inputs, labels, _ = instance[self.label_field_name]
+        graph, edge_types = sample[self.graph_field_name]
+        features = [sample[field_name] for field_name in self.feature_field_names]
+        label_indexes, decoder_inputs, labels, _ = sample[self.label_field_name]
         graph = self.graph_embedder(graph=graph, features=features)
         encodings = self.graph_encoder(graph=graph, edge_types=edge_types)
         label_encodings = self.selector(tensor=encodings, indexes=label_indexes)
@@ -58,5 +58,7 @@ class GNNRNNModel(Model):
         projections = self.class_projection(outputs.data)
         softmaxed = self.softmax(projections)
         output = PackedSequence(softmaxed, outputs.batch_sizes)
-        loss = self.nll(output.data, labels.data) if labels is not None else None
-        return ModelOutput(output=output, loss=loss)
+        sample["forward"] = output
+        if labels is not None:
+            sample["loss"] = self.nll(output.data, labels.data)
+        return sample

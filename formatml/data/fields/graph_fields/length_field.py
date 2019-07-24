@@ -14,7 +14,8 @@ from formatml.parsing.parser import FORMATTING_INTERNAL_TYPE, Node, Nodes
 
 
 class LengthField(GraphField[Tensor]):
-    def __init__(self, *, max_length: int) -> None:
+    def __init__(self, *, name: str, type: str, max_length: int) -> None:
+        super().__init__(name, type)
         self.max_length = max_length
         self.vocabulary: Vocabulary[int] = Vocabulary()
         self.vocabulary.add_items(range(self.max_length + 2))

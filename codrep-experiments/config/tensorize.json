@@ -1,1 +1,0 @@
-{"options": {"n_workers": 8, "pickle_protocol": 4, "log_level": "DEBUG"}, "data": {"uasts_dir": "./data/uasts", "instance_file": "./data/instance.pickle.bz2", "tensors_dir": "./data/tensors"}, "config": "./config"}

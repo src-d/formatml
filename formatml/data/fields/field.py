@@ -10,6 +10,10 @@ _TOutputs = TypeVar("_TOutputs")
 class Field(Generic[_TInputs, _TOutputs]):
     """Field of a sample."""
 
+    def __init__(self, name: str, type: str):
+        self.name = name
+        self.type = type
+
     def index(self, sample: _TInputs) -> None:
         """
         Index things before the tensorization itself.

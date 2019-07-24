@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from torch import float as torch_float, tensor
 from torch.nn import LogSoftmax, Module, NLLLoss
 
-from formatml.models.model import Model, ModelOutput
+from formatml.models.model import Model
 from formatml.modules.graph_encoders.graph_encoder import GraphEncoder
 from formatml.modules.misc.graph_embedding import GraphEmbedding
 from formatml.modules.misc.selector import Selector
@@ -38,19 +38,25 @@ class GNNFFModel(Model):
         self.softmax = LogSoftmax(dim=1)
         self.nll = NLLLoss(weight=tensor([1, 2000], dtype=torch_float))
 
-    def forward(self, instance: Dict[str, Any]) -> ModelOutput:  # type: ignore
+    def forward(self, sample: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """Forward pass of an embedder, encoder and decoder."""
-        graph, edge_types = instance[self.graph_field_name]
-        features = [instance[field_name] for field_name in self.feature_field_names]
-        formatting_indexes = instance[self.indexes_field_name].indexes
+        if "forward" in sample:
+            raise RuntimeError("Forward already computed.")
+        if "loss" in sample:
+            raise RuntimeError("Loss already computed.")
+        graph, edge_types = sample[self.graph_field_name]
+        features = [sample[field_name] for field_name in self.feature_field_names]
+        formatting_indexes = sample[self.indexes_field_name].indexes
         graph = self.graph_embedder(graph=graph, features=features)
         encodings = self.graph_encoder(graph=graph, edge_types=edge_types)
         label_encodings = self.selector(tensor=encodings, indexes=formatting_indexes)
         projections = self.class_projection(label_encodings)
         softmaxed = self.softmax(projections)
-        labels = instance[self.label_field_name]
+        labels = sample[self.label_field_name]
+        sample["forward"] = softmaxed
         if labels is not None:
-            loss = self.nll(softmaxed, labels)
-        else:
-            loss = None
-        return ModelOutput(output=softmaxed, loss=loss)
+            sample["loss"] = self.nll(softmaxed, labels)
+        return sample
+
+    def decode(self, sample: Dict[str, Any]) -> None:
+        print(sample["forward"])

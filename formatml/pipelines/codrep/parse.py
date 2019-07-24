@@ -15,9 +15,7 @@ from formatml.utils.helpers import setup_logging
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
     cli_helper = CLIHelper(parser)
-    parser.add_argument(
-        "--raw-dir", required=True, help="Path to the CodRep 2019 formatted dataset."
-    )
+    cli_helper.add_raw_dir()
     cli_helper.add_uasts_dir()
     cli_helper.add_configs_dir()
     cli_helper.add_log_level()

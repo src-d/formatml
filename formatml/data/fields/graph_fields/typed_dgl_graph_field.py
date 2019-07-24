@@ -17,7 +17,8 @@ class TypedDGLGraphFieldOutput(NamedTuple):
 
 
 class TypedDGLGraphField(GraphField[TypedDGLGraphFieldOutput]):
-    def __init__(self, edge_types: List[str]) -> None:
+    def __init__(self, name: str, type: str, edge_types: List[str]) -> None:
+        super().__init__(name, type)
         self.vocabulary: Vocabulary[str] = Vocabulary()
         self.vocabulary.add_items(edge_types)
 

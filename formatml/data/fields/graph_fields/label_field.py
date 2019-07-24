@@ -19,7 +19,8 @@ class LabelFieldOutput(NamedTuple):
 
 
 class LabelField(GraphField[LabelFieldOutput]):
-    def __init__(self) -> None:
+    def __init__(self, name: str, type: str) -> None:
+        super().__init__(name, type)
         self.vocabulary = Vocabulary(unknown="<UNK>")
         self.vocabulary.add_item("<PAD>")
         self.vocabulary.add_item("<GO>")

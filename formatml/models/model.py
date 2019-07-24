@@ -1,15 +1,10 @@
-from typing import Any, List, NamedTuple
+from typing import Any, Dict
 
 from torch.nn import Module
-
-
-class ModelOutput(NamedTuple):
-    output: Any
-    loss: Any
 
 
 class Model(Module):
     """Base class for complete models."""
 
-    def forward(self, *inputs: List[Any]) -> ModelOutput:
+    def forward(self, sample: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         raise NotImplementedError()

@@ -14,7 +14,8 @@ from formatml.parsing.parser import Nodes
 
 
 class InternalTypeField(GraphField[Tensor]):
-    def __init__(self) -> None:
+    def __init__(self, name: str, type: str) -> None:
+        super().__init__(name, type)
         self.vocabulary = Vocabulary(unknown="<UNK>")
 
     def index(self, sample: Nodes) -> None:
