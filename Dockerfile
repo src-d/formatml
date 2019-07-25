@@ -31,17 +31,17 @@ RUN apt-get update \
     libxml2-dev \
     gcc \
     g++ \
-    python3 \
-    python3-dev \
+    python3.7 \
+    python3.7-dev \
     python3-distutils \
     wget \
-    && wget -O - https://bootstrap.pypa.io/get-pip.py | python3 \
-    && pip3 install --no-cache-dir -r requirements.txt \
+    && wget -O - https://bootstrap.pypa.io/get-pip.py | python3.7 \
+    && pip3.7 install --no-cache-dir -r requirements.txt \
     && apt-get remove -y \
     libxml2-dev \
     gcc \
     g++ \
-    python3-dev \
+    python3.7-dev \
     wget \
     && apt-get remove -y .*-doc .*-man >/dev/null \
     && apt-get autoremove --purge -y \
@@ -52,6 +52,6 @@ COPY setup.py .
 COPY README.md .
 COPY formatml ./formatml
 
-RUN pip3 install --no-cache-dir .
+RUN pip3.7 install --no-cache-dir .
 
 ENTRYPOINT ["formatml"]

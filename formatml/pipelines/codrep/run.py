@@ -108,7 +108,9 @@ def run(
     model(instance.collate([dataset[0]]))
     logger.info(f"Configured model {model}")
 
-    model.load_state_dict(torch_load(checkpoint_file)["model_state_dict"])
+    model.load_state_dict(
+        torch_load(checkpoint_file, map_location="cpu")["model_state_dict"]
+    )
     model.eval()
     logger.info(f"Loaded model parameters from %s", checkpoint_file)
 
