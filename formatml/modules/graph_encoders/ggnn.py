@@ -69,6 +69,7 @@ class GGNN(GraphEncoder):
         return {"h": self.gru(input=node_batch.data["s"], hx=node_batch.data["h"])}
 
     def _initialize(self, node_batch: NodeBatch) -> Dict[str, Tensor]:
-        h = zeros((node_batch.data["x"].shape[0], self.h_dim))
+        h = node_batch.data["x"].new(node_batch.data["x"].shape[0], self.h_dim)
+        h.fill_(0)
         h[:, : node_batch.data["x"].shape[1]] = node_batch.data["x"]
         return {"h": h}
