@@ -111,7 +111,7 @@ class Trainer:
         self.run_dir_path = run_dir_path
         self.eval_every = eval_every
         self.train_eval_split = train_eval_split
-        self.limit_epochs_at = limit_epochs_at
+        self.limit_epochs_at = 10e1000 if limit_epochs_at is None else limit_epochs_at
         if cuda_device is not None:
             if not cuda_is_available():
                 raise RuntimeError("CUDA is not available on this system.")
