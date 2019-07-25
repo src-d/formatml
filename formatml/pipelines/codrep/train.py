@@ -71,20 +71,20 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         "--trainer-epochs",
         help="Number of epochs to train for (defaults to %(default)s).",
         type=int,
-        default=3,
+        default=10,
     )
     parser.add_argument(
         "--trainer-batch-size",
         help="Size of the training batches (defaults to %(default)s).",
         type=int,
-        default=2,
+        default=10,
     )
     parser.add_argument(
         "--trainer-eval-every",
         help="Number of iterations before an evaluation epoch (defaults to "
         "%(default)s).",
         type=int,
-        default=200,
+        default=360,
     )
     parser.add_argument(
         "--trainer-limit-epochs-at",
@@ -96,7 +96,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         help="Proportion kept for training (defaults to %(default)s). "
         "Rest goes to evaluation.",
         type=float,
-        default=0.80,
+        default=0.90,
     )
     parser.add_argument(
         "--trainer-metric-names",
