@@ -3,7 +3,6 @@ from logging import getLogger
 from typing import Any, Dict, List
 
 from dgl import unbatch
-from torch import float as torch_float, tensor
 from torch.nn import LogSoftmax, Module, NLLLoss
 
 from formatml.models.model import Model
