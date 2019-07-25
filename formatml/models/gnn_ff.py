@@ -3,7 +3,6 @@ from logging import getLogger
 from typing import Any, Dict, List
 
 from dgl import unbatch
-from torch import float as torch_float, tensor
 from torch.nn import LogSoftmax, Module, NLLLoss
 
 from formatml.models.model import Model
@@ -38,7 +37,6 @@ class GNNFFModel(Model):
         self.indexes_field_name = indexes_field_name
         self.label_field_name = label_field_name
         self.softmax = LogSoftmax(dim=1)
-        self.nll = NLLLoss(weight=tensor([1, 2000], dtype=torch_float))
 
     def forward(self, sample: Dict[str, Any]) -> Dict[str, Any]:  # type: ignore
         """Forward pass of an embedder, encoder and decoder."""
@@ -57,7 +55,11 @@ class GNNFFModel(Model):
         labels = sample[self.label_field_name]
         sample["forward"] = softmaxed
         if labels is not None:
-            sample["loss"] = self.nll(softmaxed, labels)
+            sample["loss"] = NLLLoss(
+                weight=softmaxed.new(
+                    [graph.batch_size, formatting_indexes.numel() - graph.batch_size]
+                )
+            )(softmaxed, labels)
         return sample
 
     def decode(self, sample: Dict[str, Any], prefix: str = "") -> None:

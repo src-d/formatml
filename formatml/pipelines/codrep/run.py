@@ -105,7 +105,7 @@ def run(
         ],
     )
     # The model needs a forward to be completely initialized.
-    model(dataset[0])
+    model(instance.collate([dataset[0]]))
     logger.info(f"Configured model {model}")
 
     model.load_state_dict(torch_load(checkpoint_file)["model_state_dict"])

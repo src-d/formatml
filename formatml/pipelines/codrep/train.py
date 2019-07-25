@@ -154,7 +154,7 @@ def train(
         model_encoder_message_dim=model_encoder_message_dim,
     )
     # The model needs a forward to be completely initialized.
-    model(dataset[0])
+    model(instance.collate([dataset[0]]))
     logger.info("Configured model %s", model)
 
     optimizer = Adam(params=model.parameters(), lr=optimizer_learning_rate)
