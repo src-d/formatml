@@ -1,6 +1,7 @@
 from bisect import bisect_right
 from collections import defaultdict
 from enum import Enum, unique
+from heapq import heappush, heappushpop
 from io import StringIO
 from logging import DEBUG, getLogger, INFO
 from pathlib import Path
@@ -100,6 +101,8 @@ class Trainer:
         limit_epochs_at: Optional[int],
         train_eval_split: float,
         metric_names: List[str],
+        selection_metric: str,
+        kept_checkpoints: int,
         cuda_device: Optional[int],
     ) -> None:
         self.dataset = dataset
@@ -112,6 +115,9 @@ class Trainer:
         self.eval_every = eval_every
         self.train_eval_split = train_eval_split
         self.limit_epochs_at = 10e1000 if limit_epochs_at is None else limit_epochs_at
+        self.selection_metric = selection_metric
+        self.kept_checkpoints = kept_checkpoints
+        self._checkpoints_stats: List[Tuple[float, str]] = []
         if cuda_device is not None:
             if not cuda_is_available():
                 raise RuntimeError("CUDA is not available on this system.")
@@ -195,11 +201,11 @@ class Trainer:
             sample["loss"].backward()
             self.optimizer.step()
             if self.eval_every > 0 and (self._global_step + 1) % self.eval_every == 0:
-                self._eval_epoch(epoch)
-                self._save_checkpoint(epoch, iteration)
+                score = self._eval_epoch(epoch)
+                self._save_checkpoint(epoch, score, iteration)
             self._global_step += 1
 
-    def _eval_epoch(self, epoch: int) -> None:
+    def _eval_epoch(self, epoch: int) -> float:
         self.model.eval()
         with no_grad():
             for iteration, sample in enumerate(
@@ -216,25 +222,49 @@ class Trainer:
                     iteration=iteration,
                 )
 
-        self._log_accumulated_metrics(
+        results = self._log_accumulated_metrics(
             data_type=DataType.Eval, send_event=True, epoch=epoch, iteration=iteration
         )
+        return results[self.selection_metric]
 
-    def _save_checkpoint(self, epoch: int, iteration: Optional[int] = None) -> None:
-        checkpoint_name = "e%d" % epoch
+    def _save_checkpoint(
+        self, epoch: int, score: float, iteration: Optional[int] = None
+    ) -> None:
+        checkpoint_name = "s%.4f-e%d" % (score, epoch)
         if iteration is not None:
             checkpoint_name += "-i%d" % iteration
         checkpoint_name += ".tar"
-        torch_save(
-            dict(
-                model_state_dict=self.model.state_dict(),
-                optimizer_state_dict=self.optimizer.state_dict(),
-                scheduler_state_dict=self.scheduler.state_dict(),
-                epoch=epoch,
-                iteration=iteration,
-            ),
-            str(self._checkpoints_dir / checkpoint_name),
-        )
+        checkpoint_path = str(self._checkpoints_dir / checkpoint_name)
+
+        def save() -> None:
+            torch_save(
+                dict(
+                    model_state_dict=self.model.state_dict(),
+                    optimizer_state_dict=self.optimizer.state_dict(),
+                    scheduler_state_dict=self.scheduler.state_dict(),
+                    epoch=epoch,
+                    iteration=iteration,
+                ),
+                checkpoint_path,
+            )
+
+        if len(self._checkpoints_stats) < self.kept_checkpoints:
+            self._logger.info(
+                "Saving checkpoint %s (performance %.4f).", checkpoint_path, score
+            )
+            heappush(self._checkpoints_stats, (score, checkpoint_path))
+            save()
+            return
+        if score > self._checkpoints_stats[0][0]:
+            to_remove = heappushpop(self._checkpoints_stats, (score, checkpoint_path))
+            self._logger.info(
+                "Saving checkpoint %s (performance %.4f).", checkpoint_path, score
+            )
+            save()
+            self._logger.info(
+                "Deleting checkpoint %s (performance %.4f).", to_remove[1], to_remove[0]
+            )
+            Path(to_remove[1]).unlink()
 
     def _compute_metrics(
         self,
@@ -262,7 +292,7 @@ class Trainer:
         epoch: int,
         iteration: int,
         dont_reset_accumulated: bool = False,
-    ) -> None:
+    ) -> Dict[str, float]:
         values = []
         for metric in self._metrics:
             average = self._average(self._accumulated_metrics[data_type][metric])
@@ -278,6 +308,7 @@ class Trainer:
             logging_level=INFO,
         )
         self._reset_accumulated(data_type)
+        return {self._metric_names[m]: v for m, v in values}
 
     def _log_values(
         self,

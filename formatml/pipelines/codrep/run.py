@@ -24,7 +24,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
     cli_helper.add_instance_file()
     cli_helper.add_tensors_dir()
     parser.add_argument(
-        "--checkpoint_file", required=True, help="Path to the model checkpoint."
+        "--checkpoint-file", required=True, help="Path to the model checkpoint."
     )
     cli_helper.add_configs_dir()
     parser.add_argument(

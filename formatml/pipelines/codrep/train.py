@@ -105,6 +105,18 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         default=["mrr", "cross_entropy"],
     )
     parser.add_argument(
+        "--trainer-selection-metric",
+        help="Name of the metric to use for checkpoint selection "
+        "(defaults to %(default)s).",
+        default="mrr",
+    )
+    parser.add_argument(
+        "--trainer-kept-checkpoints",
+        help="Number of best checkpoints to keep (defaults to %(default)s).",
+        type=int,
+        default=3,
+    )
+    parser.add_argument(
         "--trainer-cuda", help="CUDA index of the device to use for training.", type=int
     )
     cli_helper.add_log_level()
@@ -129,6 +141,8 @@ def train(
     trainer_limit_epochs_at: Optional[int],
     trainer_train_eval_split: float,
     trainer_metric_names: List[str],
+    trainer_selection_metric: str,
+    trainer_kept_checkpoints: int,
     trainer_cuda: Optional[int],
     log_level: str,
 ) -> None:
@@ -169,6 +183,8 @@ def train(
         train_eval_split=trainer_train_eval_split,
         limit_epochs_at=trainer_limit_epochs_at,
         metric_names=trainer_metric_names,
+        selection_metric=trainer_selection_metric,
+        kept_checkpoints=trainer_kept_checkpoints,
         run_dir_path=train_dir_path,
         dataset=dataset,
         model=model,
