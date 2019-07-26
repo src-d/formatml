@@ -44,38 +44,38 @@ def parse(*, raw_dir: str, uasts_dir: str, configs_dir: str, log_level: str) -> 
         if file_path.samefile(labels_file):
             continue
         file_path_relative = file_path.relative_to(raw_dir_path)
+        start = time()
+        logger.debug("Parsing %s", file_path_relative)
         try:
-            start = time()
-            logger.debug("Parsing %s", file_path_relative)
             nodes = parser.parse(raw_dir_path, file_path_relative)
-            logger.debug(
-                "Parsed  %s into %d nodes in %.2fms",
-                file_path_relative,
-                len(nodes.nodes),
-                (time() - start) * 1000,
-            )
-            error_node_index = None
-            if extract_labels:
-                error_offset = error_offsets[file_path.name]
-                for formatting_i, i in enumerate(nodes.formatting_indexes):
-                    node = nodes.nodes[i]
-                    if node.start == error_offset:
-                        error_node_index = formatting_i
-                        break
-                else:
-                    raise RuntimeError(
-                        "Could not retrieve a formatting node for the error at "
-                        "offset %d of file %s. Retrieved %s instead.",
-                        error_offset,
-                        file_path.with_suffix("").name,
-                        node,
-                    )
-            codrep_label = CodRepLabel(
-                error_index=error_node_index,
-                n_formatting_nodes=len(nodes.formatting_indexes),
-            )
         except ParsingException:
             continue
+        logger.debug(
+            "Parsed  %s into %d nodes in %.2fms",
+            file_path_relative,
+            len(nodes.nodes),
+            (time() - start) * 1000,
+        )
+        error_node_index = None
+        if extract_labels:
+            error_offset = error_offsets[file_path.name]
+            for formatting_i, i in enumerate(nodes.formatting_indexes):
+                node = nodes.nodes[i]
+                if node.start == error_offset:
+                    error_node_index = formatting_i
+                    break
+            else:
+                logger.warning(
+                    "Could not retrieve a formatting node for the error at offset %d "
+                    "of file %s.",
+                    error_offset,
+                    file_path.with_suffix("").name,
+                )
+                continue
+        codrep_label = CodRepLabel(
+            error_index=error_node_index,
+            n_formatting_nodes=len(nodes.formatting_indexes),
+        )
         output_subdirectory = uasts_dir_path / file_path_relative.parent
         output_subdirectory.mkdir(parents=True, exist_ok=True)
         with (output_subdirectory / file_path.with_suffix(".asdf").name).open(
