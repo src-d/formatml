@@ -1,6 +1,11 @@
-import React, { useMemo } from "react";
-import Span, { SpanType } from "./Span";
+import React from "react";
+import Span, { ISpanHandles, SpanType } from "./Span";
+import Button from "react-bootstrap/Button";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
+import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
+import Row from "react-bootstrap/Row";
 
 export interface IProps {
   code: string;
@@ -11,13 +16,20 @@ export interface IProps {
 const computeSpans = (
   code: string,
   ranking: number[],
-  error_offset: number
-): JSX.Element[] => {
+  error_offset: number,
+  n_pred_refs = 5
+): [
+  JSX.Element[],
+  React.RefObject<ISpanHandles>,
+  React.RefObject<ISpanHandles>[]
+] => {
   const spans: JSX.Element[] = [];
-  const rankingSet = new Set(ranking);
   const indices = Array.from(new Set([...ranking, error_offset]));
+  const firstPredictions = ranking.slice(0, n_pred_refs);
+  const toReference = new Set([error_offset, ...firstPredictions]);
+  let errorRef = null;
+  let predictionRefs = [];
   indices.sort((a, b) => a - b);
-  // const ranks = ranking.map((_, index) => index);
   let currentIndex = 0;
   for (const index of indices) {
     if (currentIndex < index) {
@@ -36,7 +48,21 @@ const computeSpans = (
     if (ranking[0] === index) {
       types.push(SpanType.First);
     }
-    spans.push(<Span key={index} code={code.charAt(index)} types={types} />);
+    if (toReference.has(index)) {
+      const ref = React.createRef<ISpanHandles>();
+      spans.push(
+        <Span key={index} ref={ref} code={code.charAt(index)} types={types} />
+      );
+      if (index === error_offset) {
+        errorRef = ref;
+      }
+      const rank = firstPredictions.indexOf(index);
+      if (rank !== -1) {
+        predictionRefs[rank] = ref;
+      }
+    } else {
+      spans.push(<Span key={index} code={code.charAt(index)} types={types} />);
+    }
     currentIndex = index + 1;
   }
   if (currentIndex < code.length) {
@@ -48,17 +74,47 @@ const computeSpans = (
       />
     );
   }
-  return spans;
+  return [spans, errorRef!, predictionRefs];
 };
 
 const Code = (props: IProps) => {
-  const spans = useMemo(
-    () => computeSpans(props.code, props.ranking, props.error_offset),
-    [props.code, props.ranking, props.error_offset]
+  const [spans, errorRef, predictionRefs] = computeSpans(
+    props.code,
+    props.ranking,
+    props.error_offset
   );
+  const predictionButtons = predictionRefs.map((r, i) => (
+    <Button
+      key={i}
+      onClick={() => {
+        if (r.current !== null) r.current.scrollIntoView();
+      }}
+    >
+      {i + 1}
+    </Button>
+  ));
   return (
     <Card>
-      <Card.Header>Code</Card.Header>
+      <Card.Header>
+        <Row>
+          <Col>Code</Col>
+          <Col sm="auto">
+            <ButtonToolbar>
+              <ButtonGroup className="mr-2">
+                <Button
+                  onClick={() => {
+                    if (errorRef.current !== null)
+                      errorRef.current.scrollIntoView();
+                  }}
+                >
+                  E
+                </Button>
+              </ButtonGroup>
+              <ButtonGroup>{predictionButtons}</ButtonGroup>
+            </ButtonToolbar>
+          </Col>
+        </Row>
+      </Card.Header>
       <Card.Body>
         <pre>
           <code>{spans}</code>

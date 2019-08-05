@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useImperativeHandle, forwardRef } from "react";
 import "./css/Span.css";
 
 export enum SpanType {
@@ -8,9 +8,13 @@ export enum SpanType {
   NotPredicted = "not-predicted"
 }
 
-export interface IProps {
+export interface ISpanProps {
   code: string;
   types: SpanType[];
+}
+
+export interface ISpanHandles {
+  scrollIntoView(): void;
 }
 
 const transform = (code: string): (string | JSX.Element)[] => {
@@ -49,9 +53,24 @@ const transform = (code: string): (string | JSX.Element)[] => {
   return elements;
 };
 
-const Span = (props: IProps) => {
+const Span: React.RefForwardingComponent<ISpanHandles, ISpanProps> = (
+  props,
+  ref
+) => {
   const transformed = useMemo(() => transform(props.code), [props.code]);
-  return <span className={props.types.join(" ")}>{transformed}</span>;
+  const spanRef = useRef<HTMLSpanElement>(null);
+  useImperativeHandle(ref, () => ({
+    scrollIntoView: () => {
+      if (spanRef.current !== null) {
+        spanRef.current.scrollIntoView();
+      }
+    }
+  }));
+  return (
+    <span ref={spanRef} className={props.types.join(" ")}>
+      {transformed}
+    </span>
+  );
 };
 
-export default Span;
+export default forwardRef(Span);
