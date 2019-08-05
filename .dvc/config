@@ -2,3 +2,5 @@
 url = /home/mog/.dvc
 [core]
 remote = dot-dvc
+['remote "glusterfs"']
+url = /mnt/glusterfs/dvc/formatml
