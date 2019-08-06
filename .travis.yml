@@ -9,8 +9,12 @@ before_cache:
 stages:
   - style
   - test
-  - name: deploy
-    if: tag =~ .*
+  - name: deploy-formatml
+    if: tag =~ .* AND NOT tag =~ ^codrep-.*
+  - name: deploy-codrep
+    if: tag =~ ^codrep-.* AND NOT tag =~ ^codrep-visualizer-.*
+  - name: deploy-codrep-visualizer
+    if: tag =~ ^codrep-visualizer-.*
 matrix:
   include:
     - stage: style
@@ -42,7 +46,7 @@ matrix:
         - coverage combine
       after_success:
         - codecov
-    - stage: deploy
+    - stage: deploy-formatml
       python: 3.7
       script:
         - test $(python3 setup.py --version) == $TRAVIS_TAG
@@ -50,6 +54,24 @@ matrix:
         - docker tag srcd/formatml:$TRAVIS_TAG srcd/formatml:latest
         - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
         - docker push srcd/formatml
+    - stage: deploy-codrep
+      python: 3.7
+      script:
+        - IMG_NAME=srcd/codrep2019
+        - TAG=${TRAVIS_TAG#codrep-}
+        - cd codrep/experiments && docker build -t $IMG_NAME:$TAG .
+        - docker tag $IMG_NAME:$TAG $IMG_NAME:latest
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker push $IMG_NAME
+    - stage: deploy-codrep-visualizer
+      python: 3.7
+      script:
+        - IMG_NAME=srcd/codrep2019-visualizer
+        - TAG=${TRAVIS_TAG#codrep-visualizer-}
+        - cd codrep/visualizer && docker build -t $IMG_NAME:$TAG .
+        - docker tag $IMG_NAME:$TAG $IMG_NAME:latest
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker push $IMG_NAME
   fast_finish: true
 notifications:
   email: false
