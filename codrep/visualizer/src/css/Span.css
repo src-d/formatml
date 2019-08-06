@@ -2,14 +2,18 @@
   color: rgba(0, 0, 255, 0.3);
 }
 
+.predicted,
+.error {
+  border-radius: 3px;
+}
+
 .predicted {
   background-color: #ff990062;
 }
 
 .error,
 .first {
-  border-radius: 25px;
-  border-width: 3px;
+  border-width: 2px;
   border-style: solid;
 }
 
@@ -23,4 +27,8 @@
 
 .error.first {
   border-color: #0f0;
+}
+
+.selected {
+  background-color: #003cff77;
 }

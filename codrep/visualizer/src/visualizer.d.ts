@@ -1,10 +1,15 @@
+interface Metadata {
+  columns: string[];
+  metadata: Record<string, Record<string, string[]>>;
+}
+
 interface Data {
-  dataset: string;
-  tasks: string[];
+  numberOfTasks: number;
+  metadata: Metadata;
 }
 
 interface Task {
   content: string;
   ranking: number[];
-  error_offset: number;
+  errorOffset: number;
 }

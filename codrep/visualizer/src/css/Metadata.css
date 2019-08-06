@@ -1,0 +1,7 @@
+.metadata .card {
+  margin-top: 1rem;
+}
+
+.metadata .card:first-of-type {
+  margin-top: 0;
+}

@@ -1,44 +1,42 @@
-import React from "react";
-import Card from "react-bootstrap/Card";
+import React, { useContext } from "react";
 import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
+import { AppContext, ActionTarget } from "./App";
 
-export interface IProps {
-  dataset: string;
+export interface ITaskPickerProps {
   inputTask: string | undefined;
   numberOfTasks: number;
-  onInputTaskChange(e: React.ChangeEvent<any>): void;
 }
 
-const TaskPicker = (props: IProps) => {
+const TaskPicker = (props: ITaskPickerProps) => {
   const max = props.numberOfTasks - 1;
+  const dispatch = useContext(AppContext);
   return (
-    <Card>
-      <Card.Header>Task picker</Card.Header>
-      <Card.Body>
-        <Form.Group>
-          <InputGroup>
-            <InputGroup.Prepend>
-              <InputGroup.Text>{props.dataset}/</InputGroup.Text>
-            </InputGroup.Prepend>
-            <Form.Control
-              type="number"
-              min={0}
-              max={max}
-              placeholder="Enter task number"
-              value={props.inputTask}
-              onChange={props.onInputTaskChange}
-            />
-            <InputGroup.Append>
-              <InputGroup.Text>.txt</InputGroup.Text>
-            </InputGroup.Append>
-          </InputGroup>
-          <Form.Text className="text-muted">
-            Enter a task ID between 0 and {max}.
-          </Form.Text>
-        </Form.Group>
-      </Card.Body>
-    </Card>
+    <Form.Group>
+      <InputGroup>
+        <Form.Control
+          type="number"
+          min={0}
+          max={max}
+          placeholder="Enter task number"
+          value={props.inputTask}
+          onChange={(e: React.FormEvent<any>) => {
+            if (dispatch !== null) {
+              return dispatch({
+                target: ActionTarget.inputTask,
+                payload: e.currentTarget.value
+              });
+            }
+          }}
+        />
+        <InputGroup.Append>
+          <InputGroup.Text>.txt</InputGroup.Text>
+        </InputGroup.Append>
+      </InputGroup>
+      <Form.Text className="text-muted">
+        Enter a task ID between 0 and {max}.
+      </Form.Text>
+    </Form.Group>
   );
 };
 

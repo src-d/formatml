@@ -1,23 +1,29 @@
 import React from "react";
 import Span, { ISpanHandles, SpanType } from "./Span";
+import TaskPicker from "./TaskPicker";
 import Button from "react-bootstrap/Button";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
+import "./css/Code.css";
 
-export interface IProps {
+export interface ICodeProps {
   code: string;
   ranking: number[];
-  error_offset: number;
+  errorOffset: number;
+  inputTask: string | undefined;
+  numberOfTasks: number;
+  selectedOffset: number | null;
 }
 
-const computeSpans = (
+const useComputeSpans = (
   code: string,
   ranking: number[],
-  error_offset: number,
-  n_pred_refs = 5
+  errorOffset: number,
+  selectedOffset: number | null,
+  nPredRefs = 5
 ): [
   JSX.Element[],
   React.RefObject<ISpanHandles>,
@@ -25,9 +31,9 @@ const computeSpans = (
 ] => {
   const spans: JSX.Element[] = [];
   const predictions = new Set(ranking);
-  const indices = Array.from(new Set([...ranking, error_offset]));
-  const firstPredictions = ranking.slice(0, n_pred_refs);
-  const toReference = new Set([error_offset, ...firstPredictions]);
+  const indices = Array.from(new Set([...ranking, errorOffset]));
+  const firstPredictions = ranking.slice(0, nPredRefs);
+  const toReference = new Set([errorOffset, ...firstPredictions]);
   let errorRef = null;
   let predictionRefs = [];
   indices.sort((a, b) => a - b);
@@ -39,11 +45,12 @@ const computeSpans = (
           key={currentIndex}
           code={code.slice(currentIndex, index)}
           types={[SpanType.NotPredicted]}
+          selected={false}
         />
       );
     }
     const types = [];
-    if (index === error_offset) {
+    if (index === errorOffset) {
       types.push(SpanType.Error);
     }
     if (predictions.has(index)) {
@@ -55,9 +62,16 @@ const computeSpans = (
     if (toReference.has(index)) {
       const ref = React.createRef<ISpanHandles>();
       spans.push(
-        <Span key={index} ref={ref} code={code.charAt(index)} types={types} />
+        <Span
+          key={index}
+          index={index}
+          ref={ref}
+          code={code.charAt(index)}
+          types={types}
+          selected={selectedOffset === index}
+        />
       );
-      if (index === error_offset) {
+      if (index === errorOffset) {
         errorRef = ref;
       }
       const rank = firstPredictions.indexOf(index);
@@ -65,7 +79,15 @@ const computeSpans = (
         predictionRefs[rank] = ref;
       }
     } else {
-      spans.push(<Span key={index} code={code.charAt(index)} types={types} />);
+      spans.push(
+        <Span
+          key={index}
+          index={index}
+          code={code.charAt(index)}
+          types={types}
+          selected={selectedOffset === index}
+        />
+      );
     }
     currentIndex = index + 1;
   }
@@ -75,17 +97,19 @@ const computeSpans = (
         key={currentIndex}
         code={code.slice(currentIndex)}
         types={[SpanType.NotPredicted]}
+        selected={false}
       />
     );
   }
   return [spans, errorRef!, predictionRefs];
 };
 
-const Code = (props: IProps) => {
-  const [spans, errorRef, predictionRefs] = computeSpans(
+const Code = (props: ICodeProps) => {
+  const [spans, errorRef, predictionRefs] = useComputeSpans(
     props.code,
     props.ranking,
-    props.error_offset
+    props.errorOffset,
+    props.selectedOffset
   );
   const predictionButtons = predictionRefs.map((r, i) => (
     <Button
@@ -98,10 +122,16 @@ const Code = (props: IProps) => {
     </Button>
   ));
   return (
-    <Card>
+    <Card className="code">
       <Card.Header>
         <Row>
-          <Col>Code</Col>
+          <Col sm="auto">
+            <TaskPicker
+              inputTask={props.inputTask}
+              numberOfTasks={props.numberOfTasks}
+            />
+          </Col>
+          <Col />
           <Col sm="auto">
             <ButtonToolbar>
               <ButtonGroup className="mr-2">

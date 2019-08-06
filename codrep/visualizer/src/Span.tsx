@@ -1,16 +1,26 @@
-import React, { useMemo, useRef, useImperativeHandle, forwardRef } from "react";
+import React, {
+  useMemo,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+  useContext
+} from "react";
 import "./css/Span.css";
+import { ActionTarget, AppContext } from "./App";
 
 export enum SpanType {
   Error = "error",
   First = "first",
   Predicted = "predicted",
-  NotPredicted = "not-predicted"
+  NotPredicted = "not-predicted",
+  Selected = "selected"
 }
 
 export interface ISpanProps {
   code: string;
   types: SpanType[];
+  index?: number;
+  selected: boolean;
 }
 
 export interface ISpanHandles {
@@ -57,6 +67,7 @@ const Span: React.RefForwardingComponent<ISpanHandles, ISpanProps> = (
   props,
   ref
 ) => {
+  const dispatch = useContext(AppContext);
   const transformed = useMemo(() => transform(props.code), [props.code]);
   const spanRef = useRef<HTMLSpanElement>(null);
   useImperativeHandle(ref, () => ({
@@ -64,10 +75,30 @@ const Span: React.RefForwardingComponent<ISpanHandles, ISpanProps> = (
       if (spanRef.current !== null) {
         spanRef.current.scrollIntoView();
       }
+      if (dispatch !== null) {
+        dispatch({
+          target: ActionTarget.selectedOffset,
+          payload: props.index
+        });
+      }
     }
   }));
+  const attrs =
+    props.index !== undefined && dispatch != null
+      ? {
+          onClick: () =>
+            dispatch({
+              target: ActionTarget.selectedOffset,
+              payload: props.index
+            })
+        }
+      : {};
   return (
-    <span ref={spanRef} className={props.types.join(" ")}>
+    <span
+      {...attrs}
+      ref={spanRef}
+      className={props.types.join(" ") + (props.selected ? " selected" : "")}
+    >
       {transformed}
     </span>
   );

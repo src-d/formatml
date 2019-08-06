@@ -1,6 +1,6 @@
-FROM srcd/formatml:0.2.1
+FROM srcd/formatml:0.3.0
 
-RUN mkdir /codrep /data
+RUN mkdir /codrep /data /metadata
 
 WORKDIR /codrep
 
@@ -16,4 +16,5 @@ ENTRYPOINT formatml codrep run \
     --checkpoint-file checkpoint.tar \
     --training-configs-dir training-configs \
     --configs-dir configs \
+    --metadata-dir /metadata \
     --prefix $DATASET
