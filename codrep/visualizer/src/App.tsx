@@ -86,7 +86,7 @@ const App = (props: IProps) => {
             <TaskPicker
               dataset={data.dataset}
               inputTask={inputTask}
-              numberOfTasks={data.tasks.length - 1}
+              numberOfTasks={data.tasks.length}
               onInputTaskChange={onInputTaskChange}
             />
           </Col>

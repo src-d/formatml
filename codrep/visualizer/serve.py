@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
+from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, DefaultDict, Dict, List, Tuple
 
 from flask import Flask, jsonify, render_template, request, Response
 from flask_cors import CORS
@@ -23,7 +24,7 @@ def _list_tasks(path: Path) -> Tuple[List[str], List[int]]:
 
 
 def _parse_output(path: Path, task_names: List[str]) -> Dict[str, List[int]]:
-    parsed_output = {}
+    parsed_output: DefaultDict[str, List[int]] = defaultdict(list)
     task_names_set = set(task_names)
     with path.open("r", encoding="utf8") as fh:
         for line in fh:
