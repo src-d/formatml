@@ -18,5 +18,6 @@ docker run \
     --publish 5001:5001 \
     --rm \
     --tty \
-    hugomougard/codrep-visualizer:0.1.0
+    --interactive \
+    srcd/codrep2019-visualizer:0.1.0
 ```
