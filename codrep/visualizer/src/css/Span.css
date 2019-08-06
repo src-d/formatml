@@ -4,17 +4,23 @@
 
 .predicted {
   background-color: #ff990062;
+}
+
+.error,
+.first {
   border-radius: 25px;
+  border-width: 3px;
+  border-style: solid;
 }
 
 .error {
-  border: 3px solid #f00;
+  border-color: #f00;
 }
 
 .first {
-  border: 3px solid #00f;
+  border-color: #00f;
 }
 
 .error.first {
-  border: 3px solid #0f0;
+  border-color: #0f0;
 }

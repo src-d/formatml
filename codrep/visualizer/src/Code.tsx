@@ -24,6 +24,7 @@ const computeSpans = (
   React.RefObject<ISpanHandles>[]
 ] => {
   const spans: JSX.Element[] = [];
+  const predictions = new Set(ranking);
   const indices = Array.from(new Set([...ranking, error_offset]));
   const firstPredictions = ranking.slice(0, n_pred_refs);
   const toReference = new Set([error_offset, ...firstPredictions]);
@@ -41,9 +42,12 @@ const computeSpans = (
         />
       );
     }
-    const types = [SpanType.Predicted];
+    const types = [];
     if (index === error_offset) {
       types.push(SpanType.Error);
+    }
+    if (predictions.has(index)) {
+      types.push(SpanType.Predicted);
     }
     if (ranking[0] === index) {
       types.push(SpanType.First);
