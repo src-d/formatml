@@ -31,4 +31,5 @@ COPY --from=react-build /visualizer/build build
 
 ENTRYPOINT python serve.py \
     --data /codrep/data \
-    --results /codrep/results
+    --results /codrep/results \
+    --metadata /codrep/metadata
