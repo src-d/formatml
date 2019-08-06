@@ -1,8 +1,9 @@
 from argparse import ArgumentParser
 from bz2 import open as bz2_open
-from json import load as json_load
+from json import dump as json_dump, load as json_load
 from pathlib import Path
 from pickle import load as pickle_load
+from typing import Optional
 
 from torch import load as torch_load, no_grad
 from torch.utils.data import DataLoader
@@ -35,6 +36,7 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--prefix", required=True, help="Path prefixing the output paths."
     )
+    parser.add_argument("--metadata-dir", help="Path to the metadata output directory.")
     cli_helper.add_log_level()
 
 
@@ -49,6 +51,7 @@ def run(
     configs_dir: str,
     training_configs_dir: str,
     prefix: str,
+    metadata_dir: Optional[str],
     log_level: str,
 ) -> None:
     """Run the model and output CodRep predictions."""
@@ -122,7 +125,16 @@ def run(
         num_workers=1,
     )
 
+    metadata = None if metadata_dir is None else model.build_metadata()
+    metadata_output = (
+        None if metadata_dir is None else Path(metadata_dir) / "metadata.json"
+    )
+
     with no_grad():
         for sample in dataloader:
             sample = model(sample)
-            model.decode(sample, prefix=prefix)
+            model.decode(sample=sample, prefix=prefix, metadata=metadata)
+
+    if metadata_output is not None:
+        with metadata_output.open("w", encoding="utf8") as fh:
+            json_dump(metadata, fh)

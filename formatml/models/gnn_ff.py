@@ -1,6 +1,6 @@
 from bisect import bisect_right
 from logging import getLogger
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from dgl import unbatch
 from torch.nn import LogSoftmax, Module, NLLLoss
@@ -62,7 +62,13 @@ class GNNFFModel(Model):
             )(softmaxed, labels)
         return sample
 
-    def decode(self, sample: Dict[str, Any], prefix: str = "") -> None:
+    def decode(
+        self,
+        *,
+        sample: Dict[str, Any],
+        prefix: str = "",
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
         batched_graph = sample["typed_dgl_graph"].graph
         graphs = unbatch(batched_graph)
         start = 0
@@ -75,8 +81,16 @@ class GNNFFModel(Model):
             bounds.append((start, end))
             start = end
         for (start, end), path in zip(bounds, sample["metadata"]):
-            predictions = sample["indexes"].offsets[start:end][
-                sample["forward"][start:end, 1].argsort(descending=True)
-            ]
+            path_probas = sample["forward"][start:end, 1]
+            path_indexes = sample["indexes"].offsets[start:end]
+            predictions = path_indexes[path_probas.argsort(descending=True)]
+            if metadata is not None and "metadata" in metadata:
+                metadata["metadata"][path] = {
+                    index: ["%.8f" % (2 ** proba)]
+                    for index, proba in zip(path_indexes.tolist(), path_probas.tolist())
+                }
             predictions += 1
             print("%s%s %s" % (prefix, path, " ".join(map(str, predictions.numpy()))))
+
+    def build_metadata(self) -> Dict[str, Any]:
+        return dict(columns=["Probability"], metadata={})

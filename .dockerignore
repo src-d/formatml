@@ -1,5 +1,5 @@
 .dvc
-codrep-experiments
+codrep
 *.egg-info
 .coverage.*
 .vscode
