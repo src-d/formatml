@@ -11,7 +11,8 @@ CODREP_RAW_DIR ?= $(CODREP_DATA_DIR)/raw
 CODREP_UASTS_DIR ?= $(CODREP_DATA_DIR)/uasts
 CODREP_INSTANCE_ARCHIVE ?= $(CODREP_DATA_DIR)/instance.pickle.bz2
 CODREP_TENSORS_DIR ?= $(CODREP_DATA_DIR)/tensors
-CODREP_TRAIN_DIR ?= $(CODREP_DATA_DIR)/train
+CODREP_TRAIN_NAME ?= $(shell date '+%Y-%m-%dT%H:%M')
+CODREP_TRAIN_DIR ?= $(CODREP_DATA_DIR)/train/$(CODREP_TRAIN_NAME)
 
 bblfshd:
 	docker network create $(CODREP_NETWORK) > /dev/null 2>&1 || true
@@ -83,7 +84,7 @@ tensorize: index
 train: tensorize
 	dvc run \
 		--overwrite-dvcfile \
-		--file $(CODREP_STEPS_DIR)/train.dvc \
+		--file $(CODREP_STEPS_DIR)/$(CODREP_TRAIN_NAME)-train.dvc \
 		--deps $(CODREP_INSTANCE_ARCHIVE) \
 		--deps $(CODREP_TENSORS_DIR) \
 		--outs $(CODREP_TRAIN_DIR) \
