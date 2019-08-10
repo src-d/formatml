@@ -96,6 +96,7 @@ def run(
 
     model = build_model(
         instance=instance,
+        model_decoder_type=training_configs["train"]["options"]["model_decoder_type"],
         model_encoder_iterations=training_configs["train"]["options"][
             "model_encoder_iterations"
         ],

@@ -1,23 +1,38 @@
 from argparse import ArgumentParser
 from bz2 import open as bz2_open
+from enum import Enum
 from pathlib import Path
 from pickle import load as pickle_load
 from typing import List, Optional
 
-from torch.nn import Linear
-from torch.optim import Adam
+from torch.nn import Linear, LSTM, Module, Sequential
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import StepLR
+from torch.optim.optimizer import Optimizer as TorchOptimizer
 
 from formatml.data.instance import Instance
 from formatml.datasets.codrep_dataset import CodRepDataset
-from formatml.models.gnn_ff import GNNFFModel
+from formatml.models.codrep_model import CodRepModel
 from formatml.modules.graph_encoders.ggnn import GGNN
 from formatml.modules.misc.graph_embedding import GraphEmbedding
+from formatml.modules.misc.item_getter import ItemGetter
+from formatml.modules.misc.squeezer import Squeezer
+from formatml.modules.misc.unsqueezer import Unsqueezer
 from formatml.pipelines.codrep.cli_builder import CLIBuilder
 from formatml.pipelines.pipeline import register_step
 from formatml.training.trainer import Trainer
 from formatml.utils.config import Config
 from formatml.utils.helpers import setup_logging
+
+
+class DecoderType(Enum):
+    FF = "ff"
+    RNN = "rnn"
+
+
+class Optimizer(Enum):
+    Adam = "adam"
+    SGD = "sgd"
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
@@ -47,6 +62,18 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         help="Dimensionality of the encoder messages (defaults to %(default)s).",
         type=int,
         default=128,
+    )
+    parser.add_argument(
+        "--model-decoder-type",
+        help="Type of decoder to use (defaults to %(default)s).",
+        choices=[t.value for t in DecoderType],
+        default=DecoderType.FF.value,
+    )
+    parser.add_argument(
+        "--optimizer-type",
+        help="Optimizer to use (defaults to %(default)s).",
+        default="adam",
+        choices=[o.value for o in Optimizer],
     )
     parser.add_argument(
         "--optimizer-learning-rate",
@@ -135,6 +162,8 @@ def train(
     model_encoder_iterations: int,
     model_encoder_output_dim: int,
     model_encoder_message_dim: int,
+    model_decoder_type: str,
+    optimizer_type: str,
     optimizer_learning_rate: float,
     scheduler_step_size: int,
     scheduler_gamma: float,
@@ -157,6 +186,7 @@ def train(
 
     tensors_dir_path = Path(tensors_dir).expanduser().resolve()
     train_dir_path = Path(train_dir).expanduser().resolve()
+    train_dir_path.mkdir(parents=True, exist_ok=True)
 
     with bz2_open(instance_file, "rb") as fh:
         instance = pickle_load(fh)
@@ -169,12 +199,18 @@ def train(
         model_encoder_iterations=model_encoder_iterations,
         model_encoder_output_dim=model_encoder_output_dim,
         model_encoder_message_dim=model_encoder_message_dim,
+        model_decoder_type=model_decoder_type,
     )
     # The model needs a forward to be completely initialized.
     model(instance.collate([dataset[0]]))
     logger.info("Configured model %s", model)
 
-    optimizer = Adam(params=model.parameters(), lr=optimizer_learning_rate)
+    if Optimizer(optimizer_type) is Optimizer.Adam:
+        optimizer: TorchOptimizer = Adam(
+            params=model.parameters(), lr=optimizer_learning_rate
+        )
+    else:
+        optimizer = SGD(params=model.parameters(), lr=optimizer_learning_rate)
     scheduler = StepLR(
         optimizer=optimizer, step_size=scheduler_step_size, gamma=scheduler_gamma
     )
@@ -203,14 +239,31 @@ def build_model(
     model_encoder_iterations: int,
     model_encoder_output_dim: int,
     model_encoder_message_dim: int,
-) -> GNNFFModel:
+    model_decoder_type: str,
+) -> CodRepModel:
     graph_field = instance.get_field_by_type("graph")
     label_field = instance.get_field_by_type("label")
     indexes_field = instance.get_field_by_type("indexes")
     graph_input_fields = instance.get_fields_by_type("input")
     graph_input_dimensions = [48, 48, 32]
     feature_names = [field.name for field in graph_input_fields]
-    return GNNFFModel(
+    if DecoderType(model_decoder_type) is DecoderType.FF:
+        class_projection: Module = Linear(
+            in_features=model_encoder_output_dim, out_features=2
+        )
+    else:
+        class_projection = Sequential(
+            Unsqueezer(0),
+            LSTM(
+                input_size=model_encoder_output_dim,
+                hidden_size=model_encoder_output_dim,
+                batch_first=True,
+            ),
+            ItemGetter(0),
+            Squeezer(),
+            Linear(in_features=model_encoder_output_dim, out_features=2),
+        )
+    return CodRepModel(
         graph_embedder=GraphEmbedding(
             graph_input_dimensions,
             [field.vocabulary for field in graph_input_fields],  # type: ignore
@@ -222,7 +275,7 @@ def build_model(
             h_dim=model_encoder_output_dim,
             m_dim=model_encoder_message_dim,
         ),
-        class_projection=Linear(in_features=model_encoder_output_dim, out_features=2),
+        class_projection=class_projection,
         graph_field_name=graph_field.name,
         feature_field_names=feature_names,
         indexes_field_name=indexes_field.name,
