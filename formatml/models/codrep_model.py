@@ -11,8 +11,12 @@ from formatml.modules.misc.graph_embedding import GraphEmbedding
 from formatml.modules.misc.selector import Selector
 
 
-class GNNFFModel(Model):
-    """GNN encoder followed by a feed-forward output projector."""
+class CodRepModel(Model):
+    """
+    CodRep Model.
+
+    Uses a graph encoder and a projection decoder with an optional RNN.
+    """
 
     _logger = getLogger(__name__)
 

@@ -1,0 +1,17 @@
+md5: 4f4b8a398d79f005717e8b4d7c3d8dca
+cmd: /home/mog/.virtualenvs/formatml/bin/python -m formatml codrep train --instance-file
+  ./outputs/instance.pickle.bz2 --tensors-dir ./outputs/tensors --train-dir ./outputs/train/2019-08-09T14:31
+  --configs-dir ./configs --trainer-cuda 0 --model-decoder-type ff --trainer-batch-size
+  1 --trainer-eval-every 3600 --optimizer-learning-rate 0.0001
+wdir: ..
+deps:
+- md5: be84d59d9be49224ed9f63f49c2b0fa9
+  path: outputs/instance.pickle.bz2
+- md5: e27f5eb86ff80f3dd3bea0857b695788.dir
+  path: outputs/tensors
+outs:
+- md5: a8ce5d2b5a6db19ed5a55c606e012e2e.dir
+  path: outputs/train/2019-08-09T14:31
+  cache: true
+  metric: false
+  persist: false

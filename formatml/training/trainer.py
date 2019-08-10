@@ -183,8 +183,8 @@ class Trainer:
             self.scheduler.step(epoch=None)
 
     def _train_epoch(self, epoch: int) -> None:
-        self.model.train()
         for iteration, sample in enumerate(self._dataloaders[DataType.Train], start=1):
+            self.model.train()
             if self.limit_epochs_at is not None and iteration > self.limit_epochs_at:
                 break
             sample = self.instance.to(sample, self.device)

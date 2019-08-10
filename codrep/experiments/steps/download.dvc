@@ -1,10 +1,11 @@
-md5: 7e10bd37dcd5524ea9db150ef000cf5c
+md5: 4c732bc308a554f1dcf64797a328c813
 wdir: ..
+locked: true
 deps:
-- etag: '"0468a81de99867dae1680374ae8b308693e34ff7"'
+- etag: '"887a50da629dd0a53d5ee9bb8f0e22e5fb92d1e9"'
   path: https://github.com/KTH/codrep-2019/archive/master.zip
 outs:
-- md5: 902db5641a3194900e500e04bd8d12d3
+- md5: 40422179811dce8631e1e40f3334f1f4
   path: outputs/master.zip
   cache: true
   metric: false
