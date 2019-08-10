@@ -14,17 +14,17 @@ from formatml.data.fields.typed_dgl_graph_field import TypedDGLGraphField
 from formatml.data.instance import Instance
 from formatml.data.types.codrep_label import CodRepLabel
 from formatml.parsing.parser import Nodes
-from formatml.pipelines.codrep.cli_helper import CLIHelper
+from formatml.pipelines.codrep.cli_builder import CLIBuilder
 from formatml.pipelines.pipeline import register_step
 from formatml.utils.config import Config
 from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
-    cli_helper = CLIHelper(parser)
-    cli_helper.add_uasts_dir()
-    cli_helper.add_instance_file()
-    cli_helper.add_configs_dir()
+    cli_builder = CLIBuilder(parser)
+    cli_builder.add_uasts_dir()
+    cli_builder.add_instance_file()
+    cli_builder.add_configs_dir()
     parser.add_argument(
         "--encoder-edge-types",
         help="Edge types to use in the graph encoder (defaults to %(default)s).",
@@ -38,7 +38,6 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         type=int,
         default=128,
     )
-    cli_helper.add_log_level()
 
 
 @register_step(pipeline_name="codrep", parser_definer=add_arguments_to_parser)

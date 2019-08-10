@@ -7,18 +7,17 @@ from asdf import AsdfFile
 from formatml.data.types.codrep_label import CodRepLabel
 from formatml.parsing.java_parser import JavaParser
 from formatml.parsing.parser import ParsingException
-from formatml.pipelines.codrep.cli_helper import CLIHelper
+from formatml.pipelines.codrep.cli_builder import CLIBuilder
 from formatml.pipelines.pipeline import register_step
 from formatml.utils.config import Config
 from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
-    cli_helper = CLIHelper(parser)
-    cli_helper.add_raw_dir()
-    cli_helper.add_uasts_dir()
-    cli_helper.add_configs_dir()
-    cli_helper.add_log_level()
+    cli_builder = CLIBuilder(parser)
+    cli_builder.add_raw_dir()
+    cli_builder.add_uasts_dir()
+    cli_builder.add_configs_dir()
 
 
 @register_step(pipeline_name="codrep", parser_definer=add_arguments_to_parser)

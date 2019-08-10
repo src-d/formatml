@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
 
-class CLIHelper:
+class CLIBuilder:
     def __init__(self, parser: ArgumentParser) -> None:
         self.parser = parser
 
@@ -30,9 +30,4 @@ class CLIHelper:
     def add_instance_file(self) -> None:
         self.parser.add_argument(
             "--instance-file", required=True, help="Path to the pickled instance."
-        )
-
-    def add_log_level(self) -> None:
-        self.parser.add_argument(
-            "--log-level", default="DEBUG", help="Logging verbosity."
         )

@@ -9,7 +9,7 @@ from torch import load as torch_load, no_grad
 from torch.utils.data import DataLoader
 
 from formatml.datasets.codrep_dataset import CodRepDataset
-from formatml.pipelines.codrep.cli_helper import CLIHelper
+from formatml.pipelines.codrep.cli_builder import CLIBuilder
 from formatml.pipelines.codrep.parse import parse
 from formatml.pipelines.codrep.tensorize import tensorize
 from formatml.pipelines.codrep.train import build_model
@@ -19,15 +19,15 @@ from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
-    cli_helper = CLIHelper(parser)
-    cli_helper.add_raw_dir()
-    cli_helper.add_uasts_dir()
-    cli_helper.add_instance_file()
-    cli_helper.add_tensors_dir()
+    cli_builder = CLIBuilder(parser)
+    cli_builder.add_raw_dir()
+    cli_builder.add_uasts_dir()
+    cli_builder.add_instance_file()
+    cli_builder.add_tensors_dir()
     parser.add_argument(
         "--checkpoint-file", required=True, help="Path to the model checkpoint."
     )
-    cli_helper.add_configs_dir()
+    cli_builder.add_configs_dir()
     parser.add_argument(
         "--training-configs-dir",
         required=True,
@@ -37,7 +37,6 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
         "--prefix", required=True, help="Path prefixing the output paths."
     )
     parser.add_argument("--metadata-dir", help="Path to the metadata output directory.")
-    cli_helper.add_log_level()
 
 
 @register_step(pipeline_name="codrep", parser_definer=add_arguments_to_parser)

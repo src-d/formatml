@@ -13,7 +13,7 @@ from formatml.datasets.codrep_dataset import CodRepDataset
 from formatml.models.gnn_ff import GNNFFModel
 from formatml.modules.graph_encoders.ggnn import GGNN
 from formatml.modules.misc.graph_embedding import GraphEmbedding
-from formatml.pipelines.codrep.cli_helper import CLIHelper
+from formatml.pipelines.codrep.cli_builder import CLIBuilder
 from formatml.pipelines.pipeline import register_step
 from formatml.training.trainer import Trainer
 from formatml.utils.config import Config
@@ -21,15 +21,15 @@ from formatml.utils.helpers import setup_logging
 
 
 def add_arguments_to_parser(parser: ArgumentParser) -> None:
-    cli_helper = CLIHelper(parser)
-    cli_helper.add_instance_file()
-    cli_helper.add_tensors_dir()
+    cli_builder = CLIBuilder(parser)
+    cli_builder.add_instance_file()
+    cli_builder.add_tensors_dir()
     parser.add_argument(
         "--train-dir",
         required=True,
         help="Directory where the run artifacts will be output.",
     )
-    cli_helper.add_configs_dir()
+    cli_builder.add_configs_dir()
     parser.add_argument(
         "--model-encoder-iterations",
         help="Number of message passing iterations to apply (defaults to %(default)s).",
@@ -119,10 +119,13 @@ def add_arguments_to_parser(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--trainer-cuda", help="CUDA index of the device to use for training.", type=int
     )
-    cli_helper.add_log_level()
 
 
-@register_step(pipeline_name="codrep", parser_definer=add_arguments_to_parser)
+@register_step(
+    pipeline_name="codrep",
+    parser_definer=add_arguments_to_parser,
+    graceful_keyboard_interruption=True,
+)
 def train(
     *,
     instance_file: str,
