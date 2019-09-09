@@ -18,7 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from formatml.data.instance import Instance
 from formatml.datasets.dataset import Dataset
 from formatml.models.model import Model
-from formatml.utils.torch_helpers import data_if_packed
+from formatml.utils.torch_helpers import data_if_packed, log_grad_flow
 
 
 @unique
@@ -199,6 +199,11 @@ class Trainer:
             )
             self.optimizer.zero_grad()
             sample["loss"].backward()
+            log_grad_flow(
+                self.model.named_parameters(),
+                self._writers[DataType.Train],
+                self._global_step,
+            )
             self.optimizer.step()
             if self.eval_every > 0 and (self._global_step + 1) % self.eval_every == 0:
                 score = self._eval_epoch(epoch)
