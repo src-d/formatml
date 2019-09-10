@@ -256,8 +256,9 @@ def build_model(
             Unsqueezer(0),
             LSTM(
                 input_size=model_encoder_output_dim,
-                hidden_size=model_encoder_output_dim,
+                hidden_size=model_encoder_output_dim // 2,
                 batch_first=True,
+                bidirectional=True,
             ),
             ItemGetter(0),
             Squeezer(),
