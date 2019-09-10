@@ -1,6 +1,9 @@
 from typing import Any, Iterator, List, Tuple, Union
 
-from matplotlib.lines import Line2D
+from matplotlib import use as matplotlib_use
+
+matplotlib_use("Agg")  # noqa
+from matplotlib.lines import Line2D  # noqa: I202
 import matplotlib.pyplot as plt
 from numpy import arange
 from torch import Tensor, tensor
@@ -66,4 +69,4 @@ def log_grad_flow(
         ],
         ["max-gradient", "mean-gradient", "zero-gradient"],
     )
-    writer.add_figure("gradient-flow", plt.gcf(), global_step=iteration, close=True)
+    writer.add_figure("gradient-flow", plt.gcf(), global_step=iteration)
