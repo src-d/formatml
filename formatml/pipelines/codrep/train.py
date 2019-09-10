@@ -269,11 +269,10 @@ def build_model(
             [field.vocabulary for field in graph_input_fields],  # type: ignore
         ),
         graph_encoder=GGNN(
-            iterations=model_encoder_iterations,
-            n_types=len(graph_field.vocabulary),  # type: ignore
-            x_dim=sum(graph_input_dimensions),
-            h_dim=model_encoder_output_dim,
-            m_dim=model_encoder_message_dim,
+            in_feats=sum(graph_input_dimensions),
+            out_feats=model_encoder_output_dim,
+            n_steps=model_encoder_iterations,
+            n_etypes=len(graph_field.vocabulary),  # type: ignore
         ),
         class_projection=class_projection,
         graph_field_name=graph_field.name,

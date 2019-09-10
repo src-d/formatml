@@ -23,17 +23,18 @@ class GGNN(GraphEncoder):
     _logger = getLogger(__name__)
 
     def __init__(
-        self, iterations: int, n_types: int, x_dim: int, h_dim: int, m_dim: int
+        self, in_feats: int, out_feats: int, n_steps: int, n_etypes: int
     ) -> None:
         """Construct a GGNN layer."""
         super().__init__()
-        self.iterations = iterations
-        self.n_types = n_types
-        self.x_dim = x_dim
-        self.h_dim = h_dim
-        self.m_dim = m_dim
-        self.linears = ModuleList([Linear(h_dim, m_dim) for _n in range(n_types)])
-        self.gru = GRUCell(input_size=m_dim, hidden_size=h_dim)
+        self.in_feats = in_feats
+        self.out_feats = out_feats
+        self.n_steps = n_steps
+        self.n_etypes = n_etypes
+        self._linears = ModuleList(
+            [Linear(out_feats, out_feats) for _n in range(n_etypes)]
+        )
+        self._gru = GRUCell(input_size=out_feats, hidden_size=out_feats)
 
     def forward(  # type: ignore
         self, *, graph: DGLGraph, edge_types: List[Tensor]
@@ -55,7 +56,7 @@ class GGNN(GraphEncoder):
 
         reduce_function = dgl_sum(msg="m", out="s")
 
-        for _ in range(self.iterations):
+        for _ in range(self.n_steps):
             for tensor_indexes, message_function in by_type:
                 graph.send(edges=tensor_indexes, message_func=message_function)
             graph.recv(apply_node_func=self._update, reduce_func=reduce_function)
@@ -63,10 +64,10 @@ class GGNN(GraphEncoder):
         return graph.ndata["h"]
 
     def _message(self, edge_type: int, edge_batch: EdgeBatch) -> Dict[str, Tensor]:
-        return {"m": self.linears[edge_type](edge_batch.src["h"])}
+        return {"m": self._linears[edge_type](edge_batch.src["h"])}
 
     def _update(self, node_batch: NodeBatch) -> Dict[str, Tensor]:
-        return {"h": self.gru(input=node_batch.data["s"], hx=node_batch.data["h"])}
+        return {"h": self._gru(input=node_batch.data["s"], hx=node_batch.data["h"])}
 
     def _initialize(self, node_batch: NodeBatch) -> Dict[str, Tensor]:
         h = node_batch.data["x"].new(node_batch.data["x"].shape[0], self.h_dim)
