@@ -11,13 +11,13 @@ def _make_field(edge_types: List[str]) -> TypedDGLGraphField:
 def test_graph_field(nodes: Nodes) -> None:
     dgl_graph_field = _make_field(["parent"])
     output = dgl_graph_field.tensorize(nodes)
-    assert len(output.edges_by_type) == 1
+    assert (output.etypes == 0).all()
 
 
 def test_no_edge_types(nodes: Nodes) -> None:
     dgl_graph_field = _make_field([])
     output = dgl_graph_field.tensorize(nodes)
-    assert len(output.edges_by_type) == 0
+    assert output.etypes.numel() == 0
     assert output.graph.number_of_edges() == 0
 
 
@@ -46,10 +46,6 @@ def test_collate(nodes: Nodes, other_nodes: Nodes) -> None:
         collated.graph.number_of_nodes()
         == output_1.graph.number_of_nodes() + output_2.graph.number_of_nodes()
     )
-    assert sum(t.numel() for t in collated.edges_by_type) == sum(
-        t.numel() for t in output_1.edges_by_type
-    ) + sum(t.numel() for t in output_2.edges_by_type)
-    assert all(
-        (ec[e1.numel() :] >= output_1.graph.number_of_edges()).all()
-        for e1, ec in zip(output_1.edges_by_type, collated.edges_by_type)
-    )
+    assert collated.etypes.numel() == output_1.etypes.numel() + output_2.etypes.numel()
+    assert (collated.etypes >= 0).all()
+    assert (collated.etypes < 4).all()
