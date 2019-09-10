@@ -5,9 +5,8 @@ from typing import Callable, Dict, List, Tuple
 
 from dgl import DGLGraph
 from dgl.function import sum as dgl_sum
-from dgl.init import zero_initializer
 from dgl.udf import EdgeBatch, NodeBatch
-from torch import Tensor
+from torch import cat, Tensor
 from torch.nn import GRUCell, Linear, ModuleList
 
 from formatml.modules.graph_encoders.graph_encoder import GraphEncoder
@@ -37,22 +36,21 @@ class GGNN(GraphEncoder):
         self._gru = GRUCell(input_size=out_feats, hidden_size=out_feats)
 
     def forward(  # type: ignore
-        self, *, graph: DGLGraph, edge_types: List[Tensor]
+        self, graph: DGLGraph, feat: Tensor, etypes: List[Tensor]
     ) -> DGLGraph:
         """
         Perform iterative graph updates.
 
         :param graph: Graph containing the node annotations in ndata["x"].
-        :param edge_types: List of index of edges for each edge type.
-        :return: Graph containing the node representations in ndata["h"].
+        :param feat: Node features.
+        :param etypes: List of index of edges for each edge type.
+        :return: Encoded node features.
         """
         by_type: List[Tuple[Tensor, EdgeUDF]] = [
-            (edge_type, partial(self._message, i))
-            for i, edge_type in enumerate(edge_types)
+            (etype, partial(self._message, i)) for i, etype in enumerate(etypes)
         ]
-        graph.apply_nodes(self._initialize)
-        graph.set_n_initializer(zero_initializer)
-        graph.set_e_initializer(zero_initializer)
+        zero_pad = feat.new_zeros((feat.shape[0], self.out_feats - feat.shape[1]))
+        graph.ndata["h"] = cat([feat, zero_pad], -1)
 
         reduce_function = dgl_sum(msg="m", out="s")
 
@@ -68,9 +66,3 @@ class GGNN(GraphEncoder):
 
     def _update(self, node_batch: NodeBatch) -> Dict[str, Tensor]:
         return {"h": self._gru(input=node_batch.data["s"], hx=node_batch.data["h"])}
-
-    def _initialize(self, node_batch: NodeBatch) -> Dict[str, Tensor]:
-        h = node_batch.data["x"].new(node_batch.data["x"].shape[0], self.h_dim)
-        h.fill_(0)
-        h[:, : node_batch.data["x"].shape[1]] = node_batch.data["x"]
-        return {"h": h}

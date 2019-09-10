@@ -52,7 +52,9 @@ class CodRepModel(Model):
         features = [sample[field_name] for field_name in self.feature_field_names]
         formatting_indexes = sample[self.indexes_field_name].indexes
         graph = self.graph_embedder(graph=graph, features=features)
-        encodings = self.graph_encoder(graph=graph, edge_types=edge_types)
+        encodings = self.graph_encoder(
+            graph=graph, feat=graph.ndata["x"], etypes=edge_types
+        )
         label_encodings = self.selector(tensor=encodings, indexes=formatting_indexes)
         projections = self.class_projection(label_encodings)
         softmaxed = self.softmax(projections)
