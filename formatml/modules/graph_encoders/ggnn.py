@@ -36,7 +36,7 @@ class GGNN(GraphEncoder):
         self._gru = GRUCell(input_size=out_feats, hidden_size=out_feats)
 
     def forward(  # type: ignore
-        self, graph: DGLGraph, feat: Tensor, etypes: List[Tensor]
+        self, graph: DGLGraph, feat: Tensor, etypes: Tensor
     ) -> DGLGraph:
         """
         Perform iterative graph updates.
@@ -47,8 +47,10 @@ class GGNN(GraphEncoder):
         :return: Encoded node features.
         """
         by_type: List[Tuple[Tensor, EdgeUDF]] = [
-            (etype, partial(self._message, i)) for i, etype in enumerate(etypes)
+            ((etypes == i).nonzero().flatten(), partial(self._message, i))
+            for i in range(self.n_etypes)
         ]
+
         zero_pad = feat.new_zeros((feat.shape[0], self.out_feats - feat.shape[1]))
         graph.ndata["h"] = cat([feat, zero_pad], -1)
 
