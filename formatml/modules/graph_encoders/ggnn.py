@@ -1,5 +1,4 @@
 from functools import partial
-from logging import getLogger
 from typing import Callable, Dict, List, Tuple
 
 
@@ -12,17 +11,16 @@ from torch.nn import GRUCell, Linear, ModuleList
 from formatml.modules.graph_encoders.graph_encoder import GraphEncoder
 
 
-EdgeUDF = Callable[[EdgeBatch], Dict[str, Tensor]]
-NodeUDF = Callable[[NodeBatch], Dict[str, Tensor]]
-
-
 class GGNN(GraphEncoder):
     """GGNN layer."""
 
-    _logger = getLogger(__name__)
-
     def __init__(
-        self, in_feats: int, out_feats: int, n_steps: int, n_etypes: int
+        self,
+        in_feats: int,
+        out_feats: int,
+        n_steps: int,
+        n_etypes: int,
+        bias: bool = True,
     ) -> None:
         """Construct a GGNN layer."""
         super().__init__()
@@ -33,11 +31,11 @@ class GGNN(GraphEncoder):
         self._linears = ModuleList(
             [Linear(out_feats, out_feats) for _n in range(n_etypes)]
         )
-        self._gru = GRUCell(input_size=out_feats, hidden_size=out_feats)
+        self._gru = GRUCell(input_size=out_feats, hidden_size=out_feats, bias=bias)
 
     def forward(  # type: ignore
         self, graph: DGLGraph, feat: Tensor, etypes: Tensor
-    ) -> DGLGraph:
+    ) -> Tensor:
         """
         Perform iterative graph updates.
 
@@ -47,7 +45,7 @@ class GGNN(GraphEncoder):
         :return: Encoded node features.
         """
         graph = graph.local_var()
-        by_type: List[Tuple[Tensor, EdgeUDF]] = [
+        by_type: List[Tuple[Tensor, Callable[[EdgeBatch], Dict[str, Tensor]]]] = [
             ((etypes == i).nonzero().flatten(), partial(self._message, i))
             for i in range(self.n_etypes)
         ]
