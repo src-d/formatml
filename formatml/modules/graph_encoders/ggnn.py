@@ -46,6 +46,7 @@ class GGNN(GraphEncoder):
         :param etypes: List of index of edges for each edge type.
         :return: Encoded node features.
         """
+        graph = graph.local_var()
         by_type: List[Tuple[Tensor, EdgeUDF]] = [
             ((etypes == i).nonzero().flatten(), partial(self._message, i))
             for i in range(self.n_etypes)
